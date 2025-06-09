@@ -188,8 +188,8 @@ DROP TABLE IF EXISTS `wensoul_asset_generations`;
 CREATE TABLE `wensoul_asset_generations` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '生成记录ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
-  `asset_id` bigint(20) NOT NULL COMMENT '资产ID',
-  `generation_type` varchar(50) NOT NULL COMMENT '生成类型（text/image/audio/video/code/other）',
+  `asset_id` bigint(20) NOT NULL COMMENT '关联资产ID',
+  `generation_type` varchar(50) NOT NULL COMMENT '生成工作流',
   `generation_tags` json DEFAULT NULL COMMENT '生成标签（洞察、生成、活化）',
   `input_data` json DEFAULT NULL COMMENT '输入数据（JSON格式）',
   `output_data` json DEFAULT NULL COMMENT '输出数据（JSON格式）',
@@ -203,6 +203,7 @@ CREATE TABLE `wensoul_asset_generations` (
   `quality_score` decimal(3,2) DEFAULT NULL COMMENT '生成质量评分（0-1）',
   `user_rating` tinyint(4) DEFAULT NULL COMMENT '用户评分（1-5）',
   `is_public` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否公开分享（0-否，1-是）',
+  `creator_name` varchar(100) DEFAULT NULL COMMENT '创建人姓名',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
   KEY `idx_user_id` (`user_id`),
@@ -210,6 +211,7 @@ CREATE TABLE `wensoul_asset_generations` (
   KEY `idx_status` (`status`),
   KEY `idx_generation_type` (`generation_type`),
   KEY `idx_create_time` (`create_time`),
+  KEY `idx_creator_name` (`creator_name`),
   CONSTRAINT `fk_wensoul_asset_generations_user_id` FOREIGN KEY (`user_id`) REFERENCES `wensoul_user` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_wensoul_asset_generations_asset_id` FOREIGN KEY (`asset_id`) REFERENCES `wensoul_user_assets` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='资产生成记录表';
