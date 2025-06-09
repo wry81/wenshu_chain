@@ -205,6 +205,7 @@ CREATE TABLE `wensoul_asset_generations` (
   `is_public` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否公开分享（0-否，1-是）',
   `creator_name` varchar(100) DEFAULT NULL COMMENT '创建人姓名',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `cover_image` varchar(500) DEFAULT NULL COMMENT '封面图片',
   PRIMARY KEY (`id`),
   KEY `idx_user_id` (`user_id`),
   KEY `idx_asset_id` (`asset_id`),
