@@ -9,6 +9,7 @@ CREATE TABLE `wensoul_agent` (
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `status` tinyint(4) DEFAULT 1 COMMENT '状态（0-禁用，1-启用）',
+  `agent_image` varchar(255) COMMENT '智能体图片',
   PRIMARY KEY (`id`),
   KEY `idx_agent_name` (`agent_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='智能体信息表';

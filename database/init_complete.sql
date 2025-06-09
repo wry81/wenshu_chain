@@ -1,5 +1,5 @@
 -- ============================================================================
--- 温书链 - 完整数据库初始化脚本（包含所有表定义）
+-- 文枢链 - 完整数据库初始化脚本（包含所有表定义）
 -- 适用于大用户量的用户系统、订阅管理、云存储、资产管理
 -- ============================================================================
 
@@ -326,15 +326,14 @@ INSERT INTO `wensoul_user_quota_limits` (`user_id`, `plan_id`, `storage_quota`, 
 
 DROP TABLE IF EXISTS `wensoul_agent`;
 CREATE TABLE `wensoul_agent` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '代理ID',
-  `agent_name` varchar(100) NOT NULL COMMENT '代理名称',
-  `agent_description` text COMMENT '代理描述',
-  `agent_type` varchar(50) DEFAULT NULL COMMENT '代理类型',
-  `capabilities` json DEFAULT NULL COMMENT '代理能力（JSON格式）',
-  `configuration` json DEFAULT NULL COMMENT '代理配置（JSON格式）',
-  `status` tinyint(4) DEFAULT 1 COMMENT '状态（0-禁用，1-启用）',
+`id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '智能体ID',
+  `agent_name` varchar(100) NOT NULL COMMENT '智能体名称',
+  `agent_description` text COMMENT '智能体简介',
+  `agent_api` varchar(255) NOT NULL COMMENT '智能体API接口地址',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `status` tinyint(4) DEFAULT 1 COMMENT '状态（0-禁用，1-启用）',
+  `agent_image` varchar(255) COMMENT '智能体图片',
   PRIMARY KEY (`id`),
   KEY `idx_agent_type` (`agent_type`),
   KEY `idx_status` (`status`)
@@ -342,21 +341,23 @@ CREATE TABLE `wensoul_agent` (
 
 DROP TABLE IF EXISTS `wensoul_user_agent`;
 CREATE TABLE `wensoul_user_agent` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '用户代理关联ID',
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '订阅记录ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
-  `agent_id` bigint(20) NOT NULL COMMENT '代理ID',
-  `role` varchar(20) DEFAULT 'user' COMMENT '角色（owner/admin/user）',
-  `permissions` json DEFAULT NULL COMMENT '权限配置（JSON格式）',
-  `status` tinyint(4) DEFAULT 1 COMMENT '状态（0-禁用，1-启用）',
+  `agent_id` bigint(20) NOT NULL COMMENT '智能体ID',
+  `subscription_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '订阅时间',
+  `subscription_duration` int(11) NOT NULL COMMENT '订阅时长（天数）',
+  `subscription_expire_time` datetime NOT NULL COMMENT '订阅到期时间',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `status` tinyint(4) DEFAULT 1 COMMENT '订阅状态（0-已取消，1-生效中，2-已过期）',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_user_agent` (`user_id`, `agent_id`),
   KEY `idx_user_id` (`user_id`),
   KEY `idx_agent_id` (`agent_id`),
-  CONSTRAINT `fk_user_agent_user_id` FOREIGN KEY (`user_id`) REFERENCES `wensoul_user` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_user_agent_agent_id` FOREIGN KEY (`agent_id`) REFERENCES `wensoul_agent` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户代理关联表';
+  KEY `idx_user_agent` (`user_id`, `agent_id`),
+  KEY `idx_expire_time` (`subscription_expire_time`),
+  CONSTRAINT `fk_subscription_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_subscription_agent_id` FOREIGN KEY (`agent_id`) REFERENCES `agent` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户订阅智能体表';
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -419,4 +420,4 @@ GROUP BY u.id, u.username;
 -- ============================================================================
 -- 初始化完成
 -- ============================================================================
-SELECT '温书链数据库初始化完成！' as status, NOW() as completed_at, '所有表和视图已创建' as message; 
+SELECT '文枢链数据库初始化完成！' as status, NOW() as completed_at, '所有表和视图已创建' as message; 
