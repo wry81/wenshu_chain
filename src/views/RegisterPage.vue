@@ -11,10 +11,10 @@
     <div class="login-right">
       <div class="login-card">
         <div class="login-form">
-          <h2 class="login-title">登录</h2>
+          <h2 class="login-title">注册</h2>
           <form class="custom-form">
             <div class="form-item">
-              <label for="email" class="form-label">用户名/邮箱</label>
+              <label for="email" class="form-label">邮箱</label>
               <div class="form-control-wrapper">
                 <input type="email" id="email" v-model="email" placeholder="请输入邮箱" class="custom-input" />
               </div>
@@ -26,21 +26,27 @@
               </div>
             </div>
             <div class="form-item">
-              <label for="inviteCode" class="form-label">验证码</label>
+              <label for="confirmPassword" class="form-label">确认密码</label>
+              <div class="form-control-wrapper">
+                <input type="password" id="confirmPassword" v-model="confirmPassword" placeholder="请再次输入密码" class="custom-input" />
+              </div>
+            </div>
+            <div class="form-item">
+              <label for="inviteCode" class="form-label">邀请码</label>
               <div class="form-control-wrapper">
                 <input type="text" id="inviteCode" v-model="inviteCode" placeholder="请输入邀请码" class="custom-input" />
               </div>
             </div>
-            <!-- <div class="form-item no-label">
+            <div class="form-item no-label">
               <div class="form-control-wrapper checkbox-wrapper terms-checkbox">
                 <input type="checkbox" id="agreeTerms" v-model="agreeTerms" class="custom-checkbox" />
                 <label for="agreeTerms" class="checkbox-label">阅读并同意<a href="#" class="terms-link">用户隐私协议条款</a></label>
               </div>
-            </div> -->
+            </div>
           </form>
           <div class="footer">
-            <button type="button" class="custom-button primary-button" @click="handleRegister">登录</button>
-            <button type="button" class="custom-button register-button" @click="goToRegister">注册</button>
+            <button type="button" class="custom-button primary-button" @click="handleRegister">确认注册</button>
+            <button type="button" class="custom-button register-button" @click="goToLogin">返回登录</button>
           </div>
         </div>
       </div>
@@ -68,10 +74,10 @@ export default {
         inviteCode: this.inviteCode,
         agreeTerms: this.agreeTerms
       });
-      this.$router.push('/main');
+      this.$router.push('/login');
     },
-    goToRegister() {
-      this.$router.push('/register');
+    goToLogin() {
+      this.$router.push('/login');
     }
   }
 };
