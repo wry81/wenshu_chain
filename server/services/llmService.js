@@ -1,0 +1,34 @@
+const axios = require('axios');
+
+/**
+ * Send a prompt to the configured LLM provider and return the response.
+ * The API key and endpoint are read from environment variables.
+ *
+ * LLM_API_KEY   - key for authenticating with the provider
+ * LLM_API_URL   - HTTP endpoint for chat completions
+ */
+async function chat(prompt) {
+  const apiKey = process.env.LLM_API_KEY;
+  const apiUrl = process.env.LLM_API_URL || 'https://api.openai.com/v1/chat/completions';
+
+  if (!apiKey) {
+    throw new Error('LLM API key not configured');
+  }
+
+  const body = {
+    model: process.env.LLM_MODEL || 'gpt-3.5-turbo',
+    messages: [{ role: 'user', content: prompt }]
+  };
+
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${apiKey}`
+  };
+
+  const { data } = await axios.post(apiUrl, body, { headers });
+  return data;
+}
+
+module.exports = {
+  chat
+};

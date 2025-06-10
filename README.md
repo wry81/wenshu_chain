@@ -49,6 +49,7 @@ A basic Express server under `server/` provides registration and login APIs.
 cd server
 npm install
 cp .env.example .env  # then edit database credentials
+# set LLM_API_KEY in the .env file for LLM features
 npm start
 ```
 The server listens on port 3000 by default.
@@ -60,3 +61,4 @@ The server listens on port 3000 by default.
 - `GET /api/subscriptions/plans` – list available subscription plans
 - `POST /api/subscriptions/subscribe` – subscribe to a plan (requires auth)
 - `GET /api/subscriptions/current` – get the current user's active subscription
+- `POST /api/llm/chat` – send a prompt to the configured LLM and get a response (requires auth)
