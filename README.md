@@ -32,7 +32,7 @@ wenshu_chain/
 │   ├── assets/             # 静态资源
 │   ├── components/         # 可复用组件
 │   ├── views/              # 页面组件
-│   │   ├── Login.vue       # 登录页面
+│   │   ├── LoginPage.vue       # 登录页面
 │   │   └── Main.vue        # 主页面
 │   ├── App.vue             # 根组件
 │   ├── main.js             # 应用入口
