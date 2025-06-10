@@ -39,3 +39,23 @@ wenshu_chain/
 │   └── router/index.js     # 路由配置
 └── package.json
 ```
+
+## Backend server
+
+A basic Express server under `server/` provides registration and login APIs.
+
+### Setup
+```bash
+cd server
+npm install
+cp .env.example .env  # then edit database credentials
+npm start
+```
+The server listens on port 3000 by default.
+
+### Endpoints
+- `POST /api/register` – register a new user using JSON `{username, password, email?, phone?}`
+- `POST /api/login` – obtain a JWT token with `{username, password}`
+- `GET /api/subscriptions/plans` – list available subscription plans
+- `POST /api/subscriptions/subscribe` – subscribe to a plan (requires auth)
+- `GET /api/subscriptions/current` – get the current user's active subscription
