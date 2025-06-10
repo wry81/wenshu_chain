@@ -56,6 +56,7 @@ The server listens on port 3000 by default.
 ### Endpoints
 - `POST /api/register` – register a new user using JSON `{username, password, email?, phone?}`
 - `POST /api/login` – obtain a JWT token with `{username, password}`
+
 - `GET /api/subscriptions/plans` – list available subscription plans
 - `POST /api/subscriptions/subscribe` – subscribe to a plan (requires auth)
 - `GET /api/subscriptions/current` – get the current user's active subscription
