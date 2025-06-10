@@ -7,6 +7,7 @@ const router = express.Router();
 // Register new user
 router.post('/register', async (req, res) => {
   console.log('收到注册请求，body =', req.body);
+
   const { username, password, email, phone } = req.body;
   if (!username || !password) {
     return res.status(400).json({ message: 'Username and password required' });
@@ -21,7 +22,11 @@ router.post('/register', async (req, res) => {
       'INSERT INTO wensoul_user (username, password, email, phone) VALUES (?, ?, ?, ?)',
       [username, hashed, email || null, phone || null]
     );
+
+    res.json({ message: 'User registered' });
+
     return res.status(201).json({ success: true, user: username });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
