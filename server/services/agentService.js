@@ -2,6 +2,27 @@ const pool = require('../config/db');
 const axios = require('axios');
 const { callLLM } = require('./llmService');
 
+async function userHasActiveSubscription(userId) {
+  const [rows] = await pool.query(
+    `SELECT id FROM wensoul_user_subscriptions
+     WHERE user_id = ? AND status = 1 AND end_time > NOW()
+     ORDER BY end_time DESC LIMIT 1`,
+    [userId]
+  );
+  return rows.length > 0;
+}
+
+async function userHasAgent(userId, agentId) {
+  const [rows] = await pool.query(
+    `SELECT id FROM wensoul_user_agent
+     WHERE user_id = ? AND agent_id = ?
+       AND status = 1 AND subscription_expire_time > NOW()
+     ORDER BY subscription_expire_time DESC LIMIT 1`,
+    [userId, agentId]
+  );
+  return rows.length > 0;
+}
+
 async function runAgent(agentId, input) {
   const [rows] = await pool.query(
     'SELECT workflow FROM wensoul_agent WHERE id = ? AND status = 1',
@@ -30,6 +51,8 @@ async function runAgent(agentId, input) {
 }
 
 module.exports = {
-  runAgent
+  runAgent,
+  userHasActiveSubscription,
+  userHasAgent
 };
 
