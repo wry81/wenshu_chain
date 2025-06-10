@@ -62,3 +62,6 @@ The server listens on port 3000 by default.
 - `POST /api/subscriptions/subscribe` – subscribe to a plan (requires auth)
 - `GET /api/subscriptions/current` – get the current user's active subscription
 - `POST /api/llm/chat` – send a prompt to the configured LLM and get a response (requires auth)
+- `GET /api/agents` – list available agents
+- `POST /api/agents/purchase` – purchase a single agent (requires auth)
+- `POST /api/agents/:id/run` – run a purchased agent's workflow (requires auth)
