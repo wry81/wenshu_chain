@@ -18,31 +18,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// purchase single agent
-router.post('/purchase', auth, async (req, res) => {
-  const { agentId, duration } = req.body;
-  if (!agentId || !duration) {
-    return res.status(400).json({ message: 'agentId and duration required' });
-  }
-  try {
-    const [agents] = await pool.query(
-      'SELECT id FROM wensoul_agent WHERE id = ? AND status = 1',
-      [agentId]
-    );
-    if (agents.length === 0) {
-      return res.status(404).json({ message: 'Agent not found' });
-    }
-    const userId = req.user.id;
-    await pool.query(
-      'INSERT INTO wensoul_user_agent (user_id, agent_id, subscription_duration, subscription_expire_time) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL ? DAY))',
-      [userId, agentId, duration, duration]
-    );
-    res.json({ message: 'Agent purchased' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
 
 // run agent workflow
 router.post('/:id/run', auth, async (req, res) => {

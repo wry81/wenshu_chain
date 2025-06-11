@@ -23,6 +23,22 @@ async function userHasAgent(userId, agentId) {
   return rows.length > 0;
 }
 
+async function purchaseAgent({ userId, agentId, duration }) {
+  const [agents] = await pool.query(
+    'SELECT id FROM wensoul_agent WHERE id = ? AND status = 1',
+    [agentId]
+  );
+  if (agents.length === 0) {
+    throw new Error('Agent not found');
+  }
+
+  await pool.query(
+    `INSERT INTO wensoul_user_agent (user_id, agent_id, subscription_duration, subscription_expire_time)
+     VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL ? DAY))`,
+    [userId, agentId, duration, duration]
+  );
+}
+
 async function runAgent(agentId, input) {
   const [rows] = await pool.query(
     'SELECT workflow FROM wensoul_agent WHERE id = ? AND status = 1',
@@ -53,6 +69,7 @@ async function runAgent(agentId, input) {
 module.exports = {
   runAgent,
   userHasActiveSubscription,
-  userHasAgent
+  userHasAgent,
+  purchaseAgent
 };
 

@@ -5,6 +5,7 @@ const authRoutes = require('./routes/auth');
 const subscriptionRoutes = require('./routes/subscriptions');
 const llmRoutes = require('./routes/llm');
 const agentRoutes = require('./routes/agents');
+const agentPurchaseRoutes = require('./routes/agentPurchases');
 
 //验证是否调用了.env信息
 console.log('> DB HOST:', process.env.DB_HOST);
@@ -18,6 +19,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/llm', llmRoutes);
 app.use('/api/agents', agentRoutes);
+app.use('/api/agents', agentPurchaseRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
