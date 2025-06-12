@@ -1,5 +1,4 @@
 const axios = require('axios');
-
 /**
  * Send a prompt to the configured LLM provider and return the response.
  * The API key and endpoint are read from environment variables.

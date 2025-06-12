@@ -20,6 +20,6 @@ CREATE TABLE `wensoul_agent_runs` (
   KEY `idx_status` (`status`),
   CONSTRAINT `fk_agent_run_user` FOREIGN KEY (`user_id`) REFERENCES `wensoul_user` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_agent_run_agent` FOREIGN KEY (`agent_id`) REFERENCES `wensoul_agent` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用于追踪Agent工作流的运行实例和状态';asdasd
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用于追踪Agent工作流的运行实例和状态';
 
 SET FOREIGN_KEY_CHECKS = 1;
