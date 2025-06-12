@@ -41,6 +41,7 @@ SOURCE wensoul_user_usage_stats.sql;
 -- ============================================================================
 SOURCE wensoul_agent.sql;
 SOURCE wensoul_user_agent.sql;
+SOURCE wensoul_agent_runs.sql;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -103,4 +104,5 @@ GROUP BY u.id, u.username;
 -- ============================================================================
 -- 数据库初始化完成提示
 -- ============================================================================
-SELECT '数据库初始化完成！' as status, NOW() as completed_at; 
+SELECT '数据库初始化完成！' as status, NOW() as completed_at;
+
