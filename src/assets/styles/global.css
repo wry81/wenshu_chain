@@ -1,0 +1,86 @@
+/* 定义颜色变量 */
+:root {
+  /* 主题红色系 */
+  --theme-color-primary: #BF3132; /* 主题色本体 */
+  --theme-color-20: #F2E3E3;    /* 主题色20% */
+  --theme-color-40: #F8D6D6;    /* 主题色40% */
+  --theme-color-60: #9C2323;    /* 主题色60% */
+  --theme-color-80: #6B1211;    /* 主题色80% */
+  /* 文字边框等 */
+  --color-title: #1F0C0C;       /* 标题颜色 */
+  --color-text-body: #3B1D1D;   /* 正文颜色 */
+  --color-text-description: #AD8888; /* 说明文本颜色 */
+  --color-divider: #E9E9E9;     /* 分割线颜色 */
+  --color-background-light: #FDF8F8; /* 背景色（浅色） */
+  /* 中性颜色 */
+   --color-neutral-dark: #202020;    /* 中性深色 */
+  --color-neutral-dark-gray: #4D4D4D; /* 中性深灰 */
+  --color-neutral-medium-gray: #929292; /* 中性中灰 */
+  --color-neutral-light-gray: #D0D0D0; /* 中性浅灰 */
+  --color-neutral-light: #F3F3F3;   /* 中性浅色 */
+
+  /* 字体大小 */
+  /* H1 / 大标题 / 34px */
+  --font-size-h1: 34px;
+  /* H2 / 标题 / 26px */
+  --font-size-h2: 26px;
+  /* H3 / 小标题 / 18px */
+  --font-size-h3: 18px;
+  /* 正文 / 14px */
+  --font-size-body: 14px;
+  /* 次级文字 / 辅助字体 / 12px */
+  --font-size-secondary: 12px;
+  /* 次次级文字 / 提示字体 / 10px */
+  --font-size-tertiary: 10px;
+
+  /* 圆角 */
+  --border-radius-small: 4px;
+  --border-radius-medium: 8px;
+  --border-radius-large: 24px;
+
+  /* 阴影 */
+  --box-shadow: 0 4px 16px rgba(195, 144, 144, 0.205);
+}
+
+/* 全局基本样式 */
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-weight: 200;
+  color: var(--color-text-body); /* 使用你之前定义的文本颜色变量 */
+
+  /* 定义不同操作系统下的字体栈 */
+  /* 优先使用 macOS 字体 (PingFang SC, SF Pro)，如果不存在则使用 Windows 字体 (思源黑体, Roboto)，
+     最后回退到通用字体族 sans-serif */
+  font-family: 'PingFang SC', 'SF Pro Text', 'SF Pro Display', /* macOS 字体 */
+               'Source Han Sans SC', 'Noto Sans SC', 'Roboto', /* Windows / 通用开源字体 */
+               'Helvetica Neue', Arial, 'Segoe UI', sans-serif; /* 通用回退字体 */
+
+  /* 字体抗锯齿，使字体更平滑 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 通用按钮样式 */
+/* 圆角按钮 */
+.btn{
+  height: 48px;
+  padding: 0 15px;
+  font-size: var(--font-size-large); /* 使用变量 */
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none; /* 确保a标签作为按钮时没有下划线 */
+}
+
+.icon-left{
+  width: 20px; /* SVG 图标在按钮内部的大小 */
+  height: 20px;
+  margin-right: 8px;
+  object-fit: contain;
+}

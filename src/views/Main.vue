@@ -8,6 +8,7 @@
 
       <div class="sidebar-buttons" v-if="showSidebar">
         <ul class="sidebar-menu">
+          <img src="../assets/DashboardFilled.svg" alt="Logo" class="icon-left" />
           <li
             :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentInsightSidebarNav[0] === '仪表盘' }]"
             @click="handleSidebarClick({ key: '仪表盘' })"
@@ -35,7 +36,7 @@
       <header class="content-top-bar">
         <div class="main-header-left-section">
           <div class="main-content-logo">
-            <img src="../assets/logo.png" alt="wensu_Logo" class="main-header-logo-img" />
+            <img src="../assets/logo_inverse.png" alt="wensu_Logo" class="main-header-logo-img" />
           </div>
         </div>
 
@@ -136,14 +137,16 @@ const showSidebar = computed(() => {
 .app-layout {
   display: flex;
   min-height: 100vh;
+  margin: 0;
+  padding: 0;
   background-color: #f0f2f5;
 }
 
 /* 左侧全高侧边栏 */
 .app-sidebar {
-  width: 200px; /* 固定宽度，不再动态变化 */
-  background-color: #d9d9d9;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+  width: 250px; /* 固定宽度，不再动态变化 */
+  background-color: #fff;
+  /* box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05); */
   padding-top: 20px;
   flex-shrink: 0;
 }
@@ -197,16 +200,16 @@ const showSidebar = computed(() => {
 
 /* 选中状态的菜单项 */
 .sidebar-menu-item-selected {
-  background-color: #1249FF;
+  background-color: var(--theme-color-60);
   color: #fff;
-  font-weight: bold;
-  box-shadow: 0 4px 8px rgba(18, 73, 255, 0.2);
+  font-weight: 100px;
+  box-shadow: var(--box-shadow);
 }
 
 /* 其他非洞察引擎的侧边栏内容占位符 */
 .other-sidebar-content {
   padding: 20px;
-  color: #999;
+  color: #fff;
   text-align: center;
 }
 
