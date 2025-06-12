@@ -54,6 +54,9 @@ npm start
 ```
 The server listens on port 3000 by default.
 
+The `.env` file also contains API endpoint variables used for different
+modalities. See the comments in `server/.env.example` for details.
+
 ### Endpoints
 - `POST /api/register` – register a new user using JSON `{username, password, email?, phone?}`
 - `POST /api/login` – obtain a JWT token with `{username, password}`
@@ -66,3 +69,16 @@ The server listens on port 3000 by default.
 - `GET /api/agents` – list available agents
 - `POST /api/agents/purchase` – purchase a single agent (requires auth)
 - `POST /api/agents/:id/run` – run an agent's workflow (requires active plan or purchase)
+
+### Agent Workflows
+Workflows are defined as ordered arrays of nodes stored in the database. Each
+node specifies a `nodeType` that determines which LLM endpoint is called.
+
+Supported `nodeType` values and the payloads sent to the LLM service:
+
+- **text-to-text** – `{ model, messages: [{ role: 'user', content: prompt }] }`
+- **text-to-image** – `{ prompt, model, n, size }`
+- **image-to-image** – `{ prompt, model, image }`
+- **image-to-model** – `{ image, model }`
+
+The service automatically selects the correct API URL based on `nodeType`.

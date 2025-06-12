@@ -326,15 +326,18 @@ INSERT INTO `wensoul_user_quota_limits` (`user_id`, `plan_id`, `storage_quota`, 
 
 DROP TABLE IF EXISTS `wensoul_agent`;
 CREATE TABLE `wensoul_agent` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '智能体ID',
+    `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '智能体ID',
   `agent_name` varchar(100) NOT NULL COMMENT '智能体名称',
   `agent_description` text COMMENT '智能体简介',
+  `workflow` json DEFAULT NULL COMMENT '工作流节点配置(JSON数组),定义了agent的执行步骤',
   `workflow` json DEFAULT NULL COMMENT '工作流节点配置(JSON数组),定义了agent的执行步骤',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `status` tinyint(4) DEFAULT 1 COMMENT '状态（0-禁用，1-启用）',
   `agent_image` varchar(255) COMMENT '智能体图片',
   PRIMARY KEY (`id`),
+  KEY `idx_agent_name` (`agent_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='智能体信息表';
   KEY `idx_agent_name` (`agent_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='智能体信息表';
 
@@ -354,8 +357,8 @@ CREATE TABLE `wensoul_user_agent` (
   KEY `idx_agent_id` (`agent_id`),
   KEY `idx_user_agent` (`user_id`, `agent_id`),
   KEY `idx_expire_time` (`subscription_expire_time`),
-  CONSTRAINT `fk_subscription_user_id` FOREIGN KEY (`user_id`) REFERENCES `wensoul_user` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_subscription_agent_id` FOREIGN KEY (`agent_id`) REFERENCES `wensoul_agent` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_subscription_user_id` FOREIGN KEY (`user_id`) REFERENCES `wensoul_wensoul_user` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_subscription_agent_id` FOREIGN KEY (`agent_id`) REFERENCES `wensoul_wensoul_agent` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户订阅智能体表';
 
 -- 插入使用新工作流结构的模拟数据
@@ -402,8 +405,44 @@ INSERT INTO `wensoul_agent` (`agent_name`, `agent_description`, `workflow`) VALU
   }
 ]');
 
+DROP TABLE IF EXISTS `wensoul_agent_runs`;
+CREATE TABLE `wensoul_agent_runs` (
+  `run_id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '工作流运行的唯一ID',
+  `user_id` BIGINT NOT NULL COMMENT '发起运行的用户ID',
+  `agent_id` BIGINT NOT NULL COMMENT '正在运行的智能体ID',
+  `status` VARCHAR(20) NOT NULL DEFAULT 'running' COMMENT '运行状态 (如: running, paused, completed, failed)',
+  `current_node_id` VARCHAR(100) DEFAULT NULL COMMENT '当前激活或最后完成的节点ID',
+  `node_results` JSON DEFAULT NULL COMMENT '存储每个已完成节点输入和输出的JSON对象',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`run_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_agent_id` (`agent_id`),
+  KEY `idx_status` (`status`),
+  CONSTRAINT `fk_agent_run_user` FOREIGN KEY (`user_id`) REFERENCES `wensoul_user` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_agent_run_agent` FOREIGN KEY (`agent_id`) REFERENCES `wensoul_agent` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用于追踪Agent工作流的运行实例和状态';
+
 SET FOREIGN_KEY_CHECKS = 1;
 
+## agents运行节点
+DROP TABLE IF EXISTS `wensoul_agent_runs`;
+CREATE TABLE `wensoul_agent_runs` (
+  `run_id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '工作流运行的唯一ID',
+  `user_id` BIGINT NOT NULL COMMENT '发起运行的用户ID',
+  `agent_id` BIGINT NOT NULL COMMENT '正在运行的智能体ID',
+  `status` VARCHAR(20) NOT NULL DEFAULT 'running' COMMENT '运行状态 (如: running, paused, completed, failed)',
+  `current_node_id` VARCHAR(100) DEFAULT NULL COMMENT '当前激活或最后完成的节点ID',
+  `node_results` JSON DEFAULT NULL COMMENT '存储每个已完成节点输入和输出的JSON对象',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`run_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_agent_id` (`agent_id`),
+  KEY `idx_status` (`status`),
+  CONSTRAINT `fk_agent_run_user` FOREIGN KEY (`user_id`) REFERENCES `wensoul_user` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_agent_run_agent` FOREIGN KEY (`agent_id`) REFERENCES `wensoul_agent` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用于追踪Agent工作流的运行实例和状态';
 -- ============================================================================
 -- 创建视图
 -- ============================================================================
@@ -464,3 +503,4 @@ GROUP BY u.id, u.username;
 -- 初始化完成
 -- ============================================================================
 SELECT '文枢链数据库初始化完成！' as status, NOW() as completed_at, '所有表和视图已创建' as message; 
+
