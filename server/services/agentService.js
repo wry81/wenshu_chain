@@ -1,75 +1,56 @@
 const pool = require('../config/db');
-const axios = require('axios');
 const { callLLM } = require('./llmService');
 
-async function userHasActiveSubscription(userId) {
-  const [rows] = await pool.query(
-    `SELECT id FROM wensoul_user_subscriptions
-     WHERE user_id = ? AND status = 1 AND end_time > NOW()
-     ORDER BY end_time DESC LIMIT 1`,
-    [userId]
-  );
-  return rows.length > 0;
-}
-
-async function userHasAgent(userId, agentId) {
-  const [rows] = await pool.query(
-    `SELECT id FROM wensoul_user_agent
-     WHERE user_id = ? AND agent_id = ?
-       AND status = 1 AND subscription_expire_time > NOW()
-     ORDER BY subscription_expire_time DESC LIMIT 1`,
-    [userId, agentId]
-  );
-  return rows.length > 0;
-}
-
-async function purchaseAgent({ userId, agentId, duration }) {
-  const [agents] = await pool.query(
-    'SELECT id FROM wensoul_agent WHERE id = ? AND status = 1',
-    [agentId]
-  );
-  if (agents.length === 0) {
-    throw new Error('Agent not found');
-  }
-
-  await pool.query(
-    `INSERT INTO wensoul_user_agent (user_id, agent_id, subscription_duration, subscription_expire_time)
-     VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL ? DAY))`,
-    [userId, agentId, duration, duration]
-  );
-}
-
-async function runAgent(agentId, input) {
+/**
+ * 执行一个智能体的工作流
+ * @param {number} agentId - 智能体ID
+ * @param {string} initialInput - 初始输入
+ * @returns {Promise<string>} - 最终输出
+ */
+async function runAgent(agentId, initialInput) {
   const [rows] = await pool.query(
     'SELECT workflow FROM wensoul_agent WHERE id = ? AND status = 1',
     [agentId]
   );
   if (rows.length === 0) {
-    throw new Error('Agent not found');
+    throw new Error('Agent not found or is inactive');
   }
-  const workflow = rows[0].workflow ? JSON.parse(rows[0].workflow) : [];
-  let context = input;
-  for (const step of workflow) {
-    if (step.type === 'llm') {
+
+  const workflow = rows[0].workflow;
+  if (!Array.isArray(workflow) || workflow.length === 0) {
+    throw new Error('Invalid or empty workflow');
+  }
+
+  let context = initialInput;
+  let finalOutput;
+
+  for (const node of workflow) {
+    const { nodeType, model, promptTemplate } = node;
+    // 确保 context 是字符串类型
+    const currentInput = typeof context === 'string' ? context : JSON.stringify(context);
+    const prompt = promptTemplate.replace('{{input}}', currentInput);
+
+    if (nodeType === 'text-to-text') {
       const result = await callLLM({
-        prompt: context,
-        model: step.model,
-        apiUrl: step.apiUrl,
-        apiKey: step.apiKey
+        prompt: prompt,
+        model: model
       });
-      context = result;
-    } else if (step.type === 'http') {
-      const { data } = await axios.post(step.apiUrl, { input: context });
-      context = data;
+      if (result.choices && result.choices.length > 0) {
+        context = result.choices[0].message.content;
+      } else {
+        throw new Error('LLM call returned no choices.');
+      }
+    } else {
+      console.warn(`Unsupported nodeType: ${nodeType}`);
+      // 为了让流程继续，可以将当前 context 作为下一节点的输入
+      context = `Unsupported node type ${nodeType}. Previous step output: ${context}`;
     }
+    finalOutput = context;
   }
-  return context;
+
+  return finalOutput;
 }
 
 module.exports = {
   runAgent,
-  userHasActiveSubscription,
-  userHasAgent,
-  purchaseAgent
 };
-
