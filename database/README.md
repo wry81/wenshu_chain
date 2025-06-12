@@ -210,10 +210,10 @@ database/
 ├── wensoul_user_assets.sql            # 用户资产管理相关表
 ├── wensoul_user_usage_stats.sql       # 使用统计和配额表
 ├── wensoul_user.sql                   # 用户表（已更新）
-├── wensoul_agent.sql                  # 代理表
-├── wensoul_user_agent.sql             # 用户代理关联表
+├── wensoul_agent.sql                  # 智能体表
+├── wensoul_user_agent.sql             # 用户智能体表
 ├── wensoul_agent_runs.sql             # 智能体运行记录表
 ├── init_all_tables.sql                # 完整初始化脚本
 ├── init_complete.sql                  # 单文件初始化脚本
 └── README.md                          # 详细设计文档
-``` 
+```
