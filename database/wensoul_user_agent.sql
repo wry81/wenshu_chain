@@ -16,8 +16,8 @@ CREATE TABLE `wensoul_user_agent` (
   KEY `idx_agent_id` (`agent_id`),
   KEY `idx_user_agent` (`user_id`, `agent_id`),
   KEY `idx_expire_time` (`subscription_expire_time`),
-  CONSTRAINT `fk_subscription_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_subscription_agent_id` FOREIGN KEY (`agent_id`) REFERENCES `agent` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_subscription_user_id` FOREIGN KEY (`user_id`) REFERENCES `wensoul_user` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_subscription_agent_id` FOREIGN KEY (`agent_id`) REFERENCES `wensoul_agent` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户订阅智能体表';
 
 -- 插入模拟数据

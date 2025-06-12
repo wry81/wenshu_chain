@@ -23,9 +23,7 @@ router.post('/register', async (req, res) => {
       [username, hashed, email || null, phone || null]
     );
 
-    res.json({ message: 'User registered' });
-
-    return res.status(201).json({ success: true, user: username });
+    return res.status(201).json({ message: 'User registered', success: true, user: username });
 
   } catch (err) {
     console.error(err);
