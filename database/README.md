@@ -9,6 +9,11 @@
 3. **安全性**：完善的外键约束和数据完整性保护
 4. **监控友好**：完善的统计表，便于系统监控和分析
 
+数据库脚本全部位于 `database` 目录下，按功能拆分为多个 SQL 文件。同时提供
+`init_all_tables.sql` 以及 `init_complete.sql` 两套初始化脚本：前者通过
+`SOURCE` 指令依次加载各表定义，适合按需定制；后者将所有表结构整合为单一
+文件，便于一次性执行。
+
 ## 表结构说明
 
 ### 1. 订阅套餐表 (`wensoul_subscription_plans`)
@@ -104,6 +109,17 @@
 - 性能指标追踪
 - 便于容量规划
 
+### 7. 智能体相关表
+
+#### 7.1 智能体表 (`wensoul_agent`)
+- 平台内置的智能体配置及其工作流定义
+
+#### 7.2 用户智能体表 (`wensoul_user_agent`)
+- 记录用户单独购买的智能体以及订阅时长
+
+#### 7.3 智能体运行记录表 (`wensoul_agent_runs`)
+- 按运行实例追踪每个工作流的状态与节点结果
+
 ## 索引设计
 
 ### 主要索引策略：
@@ -171,7 +187,7 @@ ALTER TABLE wensoul_user_usage_daily PARTITION BY RANGE (TO_DAYS(date)) (
 
 ## 使用建议
 
-1. **初始化**：执行 `init_all_tables.sql` 进行完整初始化
+1. **初始化**：可选择执行 `init_all_tables.sql` 或 `init_complete.sql` 完成数据库初始化
 2. **监控**：定期检查 `wensoul_system_usage_stats` 表的系统负载
 3. **清理**：定期清理软删除的数据和历史统计数据
 4. **备份**：重点关注用户数据和订阅信息的备份
@@ -191,11 +207,13 @@ database/
 ├── wensoul_subscription_plans.sql      # 订阅套餐表
 ├── wensoul_user_subscriptions.sql     # 用户订阅记录表
 ├── wensoul_user_storage.sql           # 云存储相关表
-├── wensoul_user_assets.sql            # 用户资产管理相关表  
+├── wensoul_user_assets.sql            # 用户资产管理相关表
 ├── wensoul_user_usage_stats.sql       # 使用统计和配额表
 ├── wensoul_user.sql                   # 用户表（已更新）
 ├── wensoul_agent.sql                  # 代理表
 ├── wensoul_user_agent.sql             # 用户代理关联表
+├── wensoul_agent_runs.sql             # 智能体运行记录表
 ├── init_all_tables.sql                # 完整初始化脚本
+├── init_complete.sql                  # 单文件初始化脚本
 └── README.md                          # 详细设计文档
 ``` 
