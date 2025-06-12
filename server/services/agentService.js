@@ -29,18 +29,39 @@ async function runAgent(agentId, initialInput) {
     const prompt = promptTemplate.replace('{{input}}', currentInput);
 
     let apiUrl;
-    // 根据节点类型选择对应的API URL
+    let payload;
+    // 根据节点类型选择对应的API URL 并构建相应的payload
     switch (nodeType) {
       case 'text-to-text':
         apiUrl = process.env.T2T_API_URL;
+        payload = {
+          model: model || process.env.LLM_MODEL,
+          messages: [{ role: 'user', content: prompt }]
+        };
         break;
       case 'text-to-image':
         apiUrl = process.env.T2I_API_URL;
-        // 注意：图片生成的API body可能需要不同结构，这里暂时简化
+        payload = {
+          prompt,
+          model: model || process.env.LLM_MODEL,
+          n: 1,
+          size: '1024x1024'
+        };
+        break;
+      case 'image-to-image':
+        apiUrl = process.env.I2I_API_URL;
+        payload = {
+          prompt,
+          model: model || process.env.LLM_MODEL,
+          image: currentInput
+        };
         break;
       case 'image-to-model':
         apiUrl = process.env.I2M_API_URL;
-         // 注意：模型生成的API body可能需要不同结构
+        payload = {
+          image: currentInput,
+          model: model || process.env.LLM_MODEL
+        };
         break;
       default:
         console.warn(`Unsupported nodeType: ${nodeType}`);
@@ -49,29 +70,29 @@ async function runAgent(agentId, initialInput) {
     }
 
     const result = await callLLM({
-      prompt: prompt,
-      model: model,
-      apiUrl: apiUrl, // 传入特定的API URL
+      apiUrl,
+      payload
     });
 
     // 这里需要根据不同API的返回结构来解析输出
     // 例如，文本API返回在 choices[0].message.content
     // 图片API可能返回在 data[0].url
     if (nodeType === 'text-to-text') {
-        if (result.choices && result.choices.length > 0) {
-            context = result.choices[0].message.content;
-        } else {
-            throw new Error('LLM call returned no text choices.');
-        }
-    } else if (nodeType === 'text-to-image') {
-        if (result.data && result.data.length > 0) {
-            context = result.data[0].url; // 假设返回图片URL
-        } else {
-             throw new Error('LLM call returned no image data.');
-        }
+      if (result.choices && result.choices.length > 0) {
+        context = result.choices[0].message.content;
+      } else {
+        throw new Error('LLM call returned no text choices.');
+      }
+    } else if (nodeType === 'text-to-image' || nodeType === 'image-to-image') {
+      if (result.data && result.data.length > 0) {
+        context = result.data[0].url; // 假设返回图片URL
+      } else {
+        throw new Error('LLM call returned no image data.');
+      }
+    } else if (nodeType === 'image-to-model') {
+      context = result;
     } else {
-        // 为其他类型添加输出解析逻辑...
-        context = result; // 默认将完整结果作为上下文
+      context = result;
     }
   }
 
