@@ -6,7 +6,7 @@ const axios = require('axios');
  * LLM_API_KEY   - key for authenticating with the provider
  * LLM_API_URL   - HTTP endpoint for chat completions
  */
-async function callLLM({ prompt, model, apiUrl, apiKey }) {
+async function callLLM({ payload, prompt, model, apiUrl, apiKey }) {
   const finalApiKey = apiKey || process.env.LLM_API_KEY;
   const finalUrl = apiUrl || process.env.LLM_API_URL ||
     'https://api.openai.com/v1/chat/completions';
@@ -15,7 +15,9 @@ async function callLLM({ prompt, model, apiUrl, apiKey }) {
     throw new Error('LLM API key not configured');
   }
 
-  const body = {
+  // If a full payload is provided use it directly, otherwise build the
+  // default chat-completion body from the prompt and model.
+  const body = payload || {
     model: model || process.env.LLM_MODEL || 'gpt-3.5-turbo',
     messages: [{ role: 'user', content: prompt }]
   };
