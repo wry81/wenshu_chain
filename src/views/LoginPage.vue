@@ -61,7 +61,7 @@ export default {
   },
   methods: {
     handleRegister() {
-      console.log('注册信息:', {
+      console.log('登录信息:', {
         email: this.email,
         password: this.password,
         confirmPassword: this.confirmPassword,

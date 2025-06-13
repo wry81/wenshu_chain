@@ -1,346 +1,389 @@
 <!-- eslint-disable vue/multi-word-component-names -->
 <template>
-  <div class="app-layout">
-    <aside class="app-sidebar">
-      <div class="sidebar-logo">
-        <img src="../assets/menu.svg" alt="Logo" class="sidebar-logo-img" />
+  <div class="main-layout">
+    <header class="top-navbar">
+      <div class="navbar-left">
+        <img src="../assets/logo-with-text.png" alt="文枢链 Logo" class="navbar-logo" />
       </div>
 
-      <div class="sidebar-buttons" v-if="showSidebar">
+      <div class="navbar-right-group">
+        <nav class="navbar-center-buttons-container">
+          <button
+            :class="['top-nav-btn', { 'top-nav-btn-selected': currentTopNav === 'insight-engine' }]"
+            @click="handleTopNavClick('insight-engine')"
+          >
+            洞察引擎
+          </button>
+          <button
+            :class="['top-nav-btn', { 'top-nav-btn-selected': currentTopNav === 'narrative-engine' }]"
+            @click="handleTopNavClick('narrative-engine')"
+          >
+            叙事生成引擎
+          </button>
+          <button
+            :class="['top-nav-btn', { 'top-nav-btn-selected': currentTopNav === 'ip-activation-engine' }]"
+            @click="handleTopNavClick('ip-activation-engine')"
+          >
+            IP活化引擎
+          </button>
+          <button
+            :class="['top-nav-btn', { 'top-nav-btn-selected': currentTopNav === 'knowledge-base' }]"
+            @click="handleTopNavClick('knowledge-base')"
+          >
+            知识库
+          </button>
+        </nav>
+        <div class="navbar-right">
+          <button class="top-nav-icon-btn">
+            <img src="../assets/search.svg" alt="搜索" />
+          </button>
+          <button class="top-nav-icon-btn">
+            <img src="../assets/avatar.svg" alt="用户" />
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-wrapper">
+      <aside class="sidebar" :class="{ 'sidebar-collapsed': !showSidebar }">
+        <div class="sidebar-header" :class="{ 'sidebar-header-collapsed': !showSidebar }">
+          <button class="hamburger-menu-btn" @click="toggleSidebar">
+            <img src="../assets/menu.svg" alt="菜单" />
+          </button>
+          </div>
+
         <ul class="sidebar-menu">
           <li
-            :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentInsightSidebarNav[0] === '仪表盘' }]"
-            @click="handleSidebarClick({ key: '仪表盘' })"
+            :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentInsightSidebarNav === '仪表盘' }]"
+            @click="handleSidebarClick('仪表盘', '/main/insight-engine/dashboard')"
+            data-selected="仪表盘"
           >
-            仪表盘
+            <img src="../assets/DashboardFilled.svg" alt="仪表盘" class="icon-left" />
+            <span v-if="showSidebar">仪表盘</span>
           </li>
           <li
-            :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentInsightSidebarNav[0] === '智能洞察' }]"
-            @click="handleSidebarClick({ key: '智能洞察' })"
+            :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentInsightSidebarNav === '智能洞察' }]"
+            @click="handleSidebarClick('智能洞察', '/main/insight-engine/smart-insight')"
+            data-selected="智能洞察"
           >
-            智能洞察
+            <img src="../assets/fire.svg" alt="智能洞察" class="icon-left" />
+            <span v-if="showSidebar">智能洞察</span>
           </li>
           <li
-            :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentInsightSidebarNav[0] === '洞察历史' }]"
-            @click="handleSidebarClick({ key: '洞察历史' })"
+            :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentInsightSidebarNav === '洞察历史' }]"
+            @click="handleSidebarClick('洞察历史', '/main/insight-engine/history')"
+            data-selected="洞察历史"
           >
-            洞察历史
+            <img src="../assets/HistoryOutlined.svg" alt="洞察历史" class="icon-left" />
+            <span v-if="showSidebar">洞察历史</span>
           </li>
         </ul>
-      </div>
-      <div v-else class="other-sidebar-content"></div>
-    </aside>
+      </aside>
 
-    <div class="main-content-wrapper">
-      <header class="content-top-bar">
-        <div class="main-header-left-section">
-          <div class="main-content-logo">
-            <img src="../assets/logo.png" alt="wensu_Logo" class="main-header-logo-img" />
-          </div>
-        </div>
-
-        <div class="main-header-right-section">
-          <div class="top-nav-buttons">
-            <div
-              v-for="item in topNavItems"
-              :key="item.key"
-              :class="['nav-button', { 'nav-button-active': currentTopNav[0] === item.key }]"
-              @click="handleTopNavClick(item)"
-            >
-              {{ item.label }}
-            </div>
-          </div>
-
-          <div class="header-right-icons">
-            <button class="header-icon-btn" title="灵感">
-              <img src="../assets/inspiration.svg" alt="灵感" class="custom-header-icon-svg" />
-            </button>
-            <button class="header-icon-btn" title="搜索">
-              <img src="../assets/search.svg" alt="搜索" class="custom-header-icon-svg" />
-            </button>
-            <button class="header-icon-btn" title="头像">
-              <img src="../assets/avatar.svg" alt="头像" class="custom-header-icon-svg" />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main class="main-content-area">
-        <router-view :selectedInsightNav="currentInsightSidebarNav[0]" />
+      <main class="main-content">
+        <router-view @toggle-sidebar="handleToggleSidebar" />
       </main>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref, watch, computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-
-const route = useRoute();
-const router = useRouter();
-
-const topNavItems = ref([
-  { key: 'insight-engine', label: '洞察引擎', path: '/main/insight-engine' },
-  { key: 'narrative-engine', label: '叙事生成引擎', path: '/main/narrative-engine' },
-  { key: 'ip-activation-engine', label: 'IP活化引擎', path: '/main/ip-activation-engine' },
-  { key: 'knowledge-base', label: '知识库', path: '/main/knowledge-base' },
-]);
-
-const currentTopNav = ref(['insight-engine']); // 默认选中洞察引擎
-const currentInsightSidebarNav = ref(['仪表盘']); // 洞察引擎内部侧边栏的选中状态
-
-// 根据路由变化更新顶部导航的选中状态
-watch(route, (newRoute) => {
-  const topNavKey = newRoute.meta?.topNav;
-  if (topNavKey) {
-    currentTopNav.value = [topNavKey];
-  } else {
-    currentTopNav.value = []; // 如果没有匹配的顶部导航，则不选中
-  }
-  // 当切换到非洞察引擎页面时，重置侧边栏选中状态
-  if (topNavKey !== 'insight-engine') {
-    currentInsightSidebarNav.value = [];
-  } else {
-    if (!currentInsightSidebarNav.value.length) {
-      currentInsightSidebarNav.value = ['仪表盘']; // 确保内部侧边栏选中仪表盘
-    }
-  }
-}, { immediate: true });
-
-// 顶部导航栏点击事件
-const handleTopNavClick = (item) => {
-  const key = item.key;
-  if (key === 'insight-engine') {
-    router.push(item.path);
-    currentInsightSidebarNav.value = ['仪表盘']; // 确保内部侧边栏选中仪表盘
-  } else {
-    router.push(item.path);
-    currentInsightSidebarNav.value = []; // 切换到非洞察引擎时，清空侧边栏选中
-  }
+<script>
+export default {
+  name: 'MainLayout',
+  data() {
+    return {
+      showSidebar: true, // 控制侧边栏展开/折叠的状态，默认为展开
+      currentTopNav: 'insight-engine',
+      currentInsightSidebarNav: '仪表盘',
+    };
+  },
+  watch: {
+    '$route.path': {
+      immediate: true,
+      handler(newPath) {
+        if (newPath.startsWith('/main/insight-engine')) {
+          this.currentTopNav = 'insight-engine';
+          if (newPath.includes('dashboard')) {
+            this.currentInsightSidebarNav = '仪表盘';
+            this.showSidebar = true; // 确保进入仪表盘时侧边栏展开
+          } else if (newPath.includes('smart-insight')) {
+            // 如果路径包含 'editor' (即 NodeEditRedbook 页面)，则不展开侧边栏
+            if (!newPath.includes('/editor')) {
+              this.showSidebar = true; // 确保进入智能洞察列表页时侧边栏展开
+            }
+            this.currentInsightSidebarNav = '智能洞察';
+          } else if (newPath.includes('history')) {
+            this.currentInsightSidebarNav = '洞察历史';
+            this.showSidebar = true; // 确保进入洞察历史时侧边栏展开
+          }
+        } else if (newPath.startsWith('/main/narrative-engine')) {
+          this.currentTopNav = 'narrative-engine';
+          this.showSidebar = true; // 其他顶级导航也默认展开侧边栏
+        } else if (newPath.startsWith('/main/ip-activation-engine')) {
+          this.currentTopNav = 'ip-activation-engine';
+          this.showSidebar = true;
+        } else if (newPath.startsWith('/main/knowledge-base')) {
+          this.currentTopNav = 'knowledge-base';
+          this.showSidebar = true;
+        } else {
+          this.currentTopNav = '';
+          this.showSidebar = true;
+        }
+      },
+    },
+  },
+  methods: {
+    toggleSidebar() {
+      this.showSidebar = !this.showSidebar;
+    },
+    // 新增方法：处理子组件发出的折叠侧边栏事件
+    handleToggleSidebar(state) {
+      this.showSidebar = state;
+    },
+    handleTopNavClick(navKey) {
+      this.currentTopNav = navKey;
+      // 点击顶部导航时，默认展开侧边栏 (如果需要)
+      this.showSidebar = true;
+      if (navKey === 'insight-engine') {
+        this.$router.push('/main/insight-engine');
+      } else if (navKey === 'narrative-engine') {
+        this.$router.push('/main/narrative-engine');
+      } else if (navKey === 'ip-activation-engine') {
+        this.$router.push('/main/ip-activation-engine');
+      } else if (navKey === 'knowledge-base') {
+        this.$router.push('/main/knowledge-base');
+      }
+    },
+    handleSidebarClick(sidebarKey, routePath) {
+      this.currentInsightSidebarNav = sidebarKey;
+      // 只有当路由路径不是编辑页面时，才在点击侧边栏时确保侧边栏展开
+      // 编辑页面会自行控制侧边栏的折叠/展开
+      if (!routePath.includes('/editor')) {
+        this.showSidebar = true;
+      }
+      this.$router.push(routePath);
+    },
+  },
 };
-
-// 侧边栏点击事件 (仅在洞察引擎激活时有效)
-const handleSidebarClick = (e) => {
-  const key = e.key;
-  currentInsightSidebarNav.value = [key]; // 更新洞察引擎内部的选中状态
-};
-
-// 计算属性：判断是否显示侧边栏
-const showSidebar = computed(() => {
-  return currentTopNav.value.includes('insight-engine');
-});
 </script>
 
 <style scoped>
-/* 整个应用布局容器 */
-.app-layout {
+/* 全局布局 */
+.main-layout {
   display: flex;
-  min-height: 100vh;
-  background-color: #f0f2f5;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  background-image: url('../assets/background.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
-/* 左侧全高侧边栏 */
-.app-sidebar {
-  width: 200px; /* 固定宽度，不再动态变化 */
-  background-color: #d9d9d9;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
-  padding-top: 20px;
-  flex-shrink: 0;
-}
-
-.sidebar-logo {
-  height: 64px;
+/* 顶部导航栏 */
+.top-navbar {
+  height: 60px; /* 顶部导航高度 */
+  background-color: #ffffff7a;
   display: flex;
-  justify-content: flex-start; /* 左对齐 */
   align-items: center;
-  margin-bottom: 20px;
-  padding-left: 30px;
-  border-bottom: 1px solid #f0f0f0;
-  /* 移除 cursor: pointer; 和 @click 事件，因为它不再是触发器 */
+  padding: 0 20px;
+  z-index: 10;
+  border-bottom: 2px solid var(--theme-color-40);
+  flex-shrink: 0; /* 确保顶部导航栏不收缩 */
 }
 
-.sidebar-logo-img {
-  max-width: 20%;
-  max-height: 80%;
-  object-fit: contain;
-  /* 移除与折叠相关的样式 */
+.navbar-left {
+  display: flex;
+  align-items: center;
 }
 
-/* 侧边栏菜单容器 */
-.sidebar-buttons {
+.navbar-logo {
+  height: 35px;
+  margin-left: 30px;
+  margin-right: 10px;
+}
+
+.navbar-right-group {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  gap: 20px;
+}
+
+.navbar-center-buttons-container {
+  display: flex;
+  align-items: center;
+  background-color: var(--white-color);
+  border-radius: var(--border-radius-large);
+  padding: 5px 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  gap: 5px;
+}
+
+.top-nav-btn {
+  padding: 8px 18px;
+  height: auto;
+  font-size: var(--font-size-body);
+  font-weight: 500;
+  border-radius: var(--border-radius-pill);
+  color: var(--color-text-body);
   background-color: transparent;
 }
+
+.top-nav-btn-selected {
+  background-color: var(--theme-color-primary);
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.top-nav-btn:hover {
+  background-color: var(--theme-color-primary);
+  color: #fff;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 内容区域布局 */
+.content-wrapper {
+  flex-grow: 1;
+  display: flex;
+  background-color: transparent;
+  overflow: hidden;
+}
+
+/* 侧边栏 */
+.sidebar {
+  width: 250px; /* 默认展开宽度 */
+  background-color: var(--theme-color-40);
+  box-shadow: var(--box-shadow-soft);
+  transition: width 0.3s ease; /* 宽度过渡动画 */
+  flex-shrink: 0; /* 防止侧边栏被压缩 */
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding-top: 20px; /* 顶部间距 */
+  overflow-x: hidden; /* 隐藏超出部分，确保文字完全消失 */
+}
+
+/* 侧边栏折叠状态 */
+.sidebar-collapsed {
+  width: 80px; /* 折叠后的宽度，根据图片调整，让汉堡菜单和图标可见 */
+  /* align-items: center; /* 在折叠时让内部项目居中，但如果header有特殊布局，可能要分开处理 */ 
+}
+
+/* 侧边栏头部 - 展开状态 */
+.sidebar-header {
+  padding: 0 20px 20px;
+  display: flex;
+  justify-content: flex-start; /* 汉堡菜单左对齐 */
+  align-items: center;
+  position: relative;
+  transition: padding 0.3s ease; /* 过渡内边距 */
+}
+
+/* 侧边栏头部 - 折叠状态 */
+.sidebar-header-collapsed {
+  justify-content: center; /* 折叠时汉堡菜单居中 */
+  padding: 0 0 20px; /* 移除左右padding */
+}
+
+.hamburger-menu-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 25px; /* 展开时汉堡菜单的位置 */
+  margin-top: 10px;
+  border-radius: var(--border-radius-small);
+  transition: background-color 0.3s ease, margin 0.3s ease; /* 增加 margin 过渡 */
+}
+
+.sidebar-header-collapsed .hamburger-menu-btn {
+  margin-left: 0; /* 折叠时汉堡菜单居中，无需左边距 */
+}
+
+.hamburger-menu-btn:hover {
+  background-color: var(--color-neutral-light);
+}
+
+.hamburger-menu-btn img {
+  width: 24px;
+  height: 24px;
+}
+
+/* 我移除了与 sidebar-logo-text 相关的样式，因为它在模板中已被移除 */
+/* .sidebar-logo-text { ... } */
+/* .sidebar-collapsed .sidebar-logo-text { ... } */
+/* .sidebar-header-logo { ... } */
+/* .sidebar-header-app-name { ... } */
+
 
 .sidebar-menu {
   list-style: none;
   padding: 0;
   margin: 0;
-  background-color: transparent;
+  flex-grow: 1;
 }
 
-/* 侧边栏菜单项 */
 .sidebar-menu-item {
-  margin: 0 16px 8px;
-  border-radius: 16px;
-  padding: 0 16px;
-  font-size: 16px;
-  font-weight: 500;
-  height: 48px;
-  line-height: 48px;
-  color: #333;
-  background-color: transparent;
+  display: flex; /* 使用 flexbox 对齐图标和文本 */
+  align-items: center; /* 垂直居中对齐 */
+  padding: 12px 30px; /* 增大点击区域和内边距 */
   cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  display: flex;
-  align-items: center;
+  color: var(--color-text-body);
+  font-size: var(--font-size-body);
+  font-weight: 500;
+  transition: background-color 0.3s ease, color 0.3s ease, padding 0.3s ease, margin 0.3s ease; /* 增加 padding 和 margin 过渡 */
+  white-space: nowrap; /* 防止文本换行 */
+  overflow: hidden; /* 隐藏溢出内容，确保文字完全消失 */
+  border-radius: 14px; /* 右侧圆角 */
+  margin: 10px 20px; /* 留出右侧空间形成圆角效果 */
 }
 
-/* 选中状态的菜单项 */
+.sidebar-menu-item:hover {
+  background-color: var(--theme-color-40);
+  color: var(--color-text-body);
+}
+
+/* 针对选中项的特定样式 */
 .sidebar-menu-item-selected {
-  background-color: #1249FF;
-  color: #fff;
-  font-weight: bold;
-  box-shadow: 0 4px 8px rgba(18, 73, 255, 0.2);
+  /* 基础选中样式，会被下面的 data-selected 覆盖或补充 */
+  background-color: var(--theme-color-40);
+  color: var(--color-text-body);
+}
+.sidebar-menu-item[data-selected="仪表盘"].sidebar-menu-item-selected {
+  background-color: var(--theme-color-40); /* 选中时的背景色 */
+  color: var(--color-text-body); /* 选中时的文字颜色 */
+}
+.sidebar-menu-item[data-selected="智能洞察"].sidebar-menu-item-selected {
+  background-color: var(--theme-color-40); /* 选中时的背景色 */
+  color: var(--color-text-body); /* 选中时的文字颜色 */
+}
+.sidebar-menu-item[data-selected="洞察历史"].sidebar-menu-item-selected {
+  background-color: var(--theme-color-40); /* 修正：你原先写的是 --color-color-40 */
+  color: var(--color-text-body); /* 选中时的文字颜色 */
 }
 
-/* 其他非洞察引擎的侧边栏内容占位符 */
-.other-sidebar-content {
-  padding: 20px;
-  color: #999;
-  text-align: center;
+/* 侧边栏折叠状态下的菜单项 */
+.sidebar-collapsed .sidebar-menu-item {
+  justify-content: center; /* 图标居中 */
+  padding: 12px 0; /* 调整内边距，使其更紧凑 */
+  margin: 10px auto; /* 水平居中，并保持垂直间距 */
+  width: 60px; /* 确保项目宽度与侧边栏宽度匹配，实现居中 */
 }
 
-/* 右侧主内容区域的容器 */
-.main-content-wrapper {
+/* 主内容区 */
+.main-content {
+  background-color: transparent;
   flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-/* 右侧内容的顶部条 */
-.content-top-bar {
-  height: 64px;
-  display: flex;
-  /* 关键修改：不再使用 space-between，而是依靠 margin-left: auto */
-  /* justify-content: space-between; */
-  align-items: center;
-  padding: 0 24px;
-  background-color: #f0f2f5;
-}
-
-/* 顶部条左侧的 Logo 容器 */
-.main-header-left-section {
-  display: flex;
-  align-items: center;
-  /* 没有 margin-right: auto，所以它会保持在左侧 */
-}
-
-.main-content-logo {
-  height: 40px; /* 示例高度，确保它在顶部条中垂直居中和美观 */
-  display: flex; /* 确保图片能被 Flex 居中 */
-  align-items: center; /* 垂直居中图片 */
-  justify-content: flex-start; /* 或者 center，取决于你想让Logo在容器中靠左还是居中 */
-  /* 如果Logo需要与顶部导航按钮有间距，可以在这里加 margin-right */
-  margin-right: 40px; /* 示例：Logo和顶部导航按钮组之间的间距 */
-}
-
-/* Logo 图片的样式 */
-.main-header-logo-img {
-  max-height: 100%; /* 确保图片不超过其父容器的高度 */
-  width: auto; /* 保持图片原始宽高比 */
-  object-fit: contain; /* 如果图片尺寸与容器不符，确保完整显示 */
-  /* 可以为图片设置固定宽度，例如： */
-  /* width: 120px; */
-  /* height: 30px; */
-}
-
-/* 顶部条右侧的导航按钮组和图标容器 */
-.main-header-right-section {
-  display: flex;
-  align-items: center;
-  margin-left: auto; /* 关键：这会将整个右侧容器推到最右边 */
-}
-
-/* 顶部导航按钮组容器样式 */
-.top-nav-buttons {
-  display: flex;
-  align-items: center;
-  background-color: #fff;
-  border-radius: 999px;
-  padding: 4px;
-  max-width: 600px;
-  justify-content: flex-start;
-}
-
-.nav-button {
-  flex: 1;
-  padding: 8px 20px;
-  border-radius: 999px;
-  text-align: center;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: 500;
-  color: #1B5192;
-  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
-  white-space: nowrap;
-}
-
-.nav-button-active {
-  background-color: #CDE0F6;
-  color: #1B5192;
-  font-weight: bold;
-}
-
-/* 头部右侧图标区域 */
-.header-right-icons {
-  display: flex;
-  align-items: center;
-  margin-left: 10px; /* 这会是 top-nav-buttons 和 header-right-icons 之间的间距 */
-}
-
-.header-icon-btn {
-  background-color: white; /* 白色背景 */
-  border: none; /* 移除边框 */
-  border-radius: 50%; /* 圆形剪裁 */
-  cursor: pointer;
-  width: 40px; /* 固定宽度，与高度相同以形成圆形 */
-  height: 40px; /* 固定高度 */
-  display: flex; /* 使用 Flexbox 布局 */
-  justify-content: center; /* 水平居中 SVG */
-  align-items: center; /* 垂直居中 SVG */
-  margin-left: 15px; /* 按钮之间的间距 */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 柔和的阴影，增加立体感 */
-  transition: background-color 0.3s ease, box-shadow 0.3s ease; /* 过渡效果 */
-}
-
-.header-icon-btn:hover {
-  background-color: #CDE0F6; /* 鼠标悬停时的浅蓝色背景 */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* 悬停时更明显的阴影 */
-}
-
-/* 自定义 SVG 图标的样式 */
-.custom-header-icon-svg {
-  width: 30px; /* SVG 图标在按钮内部的大小 */
-  height: 30px;
-  /* 如果你的 SVG 文件内部的 fill/stroke 属性是 currentColor，
-     那么你可以通过设置父元素（.header-icon-btn）的 color 属性来改变 SVG 的颜色。
-     否则，你需要在这里直接设置 fill/stroke 属性。 */
-  fill: #555; /* 默认图标颜色，可以根据你的 SVG 实际颜色调整 */
-  transition: fill 0.3s ease; /* SVG 颜色变化的过渡效果 */
-}
-
-/* 鼠标悬停时改变 SVG 图标的颜色 */
-.header-icon-btn:hover .custom-header-icon-svg {
-  fill: #1890ff; /* 悬停时图标变为蓝色 */
-}
-
-/* 主内容区域 */
-.main-content-area {
-  flex-grow: 1;
-  margin: 0 24px 24px;
-  min-height: calc(100vh - 64px - 24px - 24px);
-  background-color: #f0f2f5;
-  border-radius: 8px;
-  overflow: auto;
+  padding: 20px; /* 主内容区内边距 */
+  overflow-y: auto; /* 内容过多时滚动 */
 }
 </style>

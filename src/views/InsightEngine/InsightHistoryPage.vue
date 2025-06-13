@@ -1,6 +1,6 @@
 <template>
   <div class="content-card">
-    <h3>洞察历史内容</h3>
+    <h3>洞察历史</h3>
     <p>这里是洞察历史的功能模块。</p>
   </div>
 </template>
