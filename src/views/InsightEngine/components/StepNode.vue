@@ -25,9 +25,15 @@
         <div v-else-if="safeNodeData.status === 'error'" class="error-display">
           <p class="error-text">错误: {{ safeNodeData.output?.error || '未知错误' }}</p>
         </div>
-        <div v-else-if="safeNodeData.output?.images && safeNodeData.output.images.length > 0" class="image-display">
-          <img :src="'data:image/png;base64,' + safeNodeData.output.images[0]" alt="Generated Image" />
-          <p v-if="safeNodeData.output.text" class="output-text">{{ safeNodeData.output.text }}</p>
+        <div v-else-if="safeNodeData.output?.text || (safeNodeData.output?.images && safeNodeData.output.images.length > 0)" class="generated-content-display">
+          <div v-if="safeNodeData.output?.text" class="text-output-display">
+            <p class="generated-text-content">{{ safeNodeData.output.text }}</p>
+            <button class="copy-button" @click="copyTextOutput">复制</button>
+          </div>
+
+          <div v-if="safeNodeData.output?.images && safeNodeData.output.images.length > 0" class="image-output-display">
+            <img :src="'data:image/png;base64,' + safeNodeData.output.images[0]" alt="Generated Image" />
+          </div>
         </div>
         <div v-else class="placeholder">
           <p>等待生成内容...</p>
@@ -51,6 +57,8 @@ import { Handle, Position } from '@vue-flow/core';
 
 const props = defineProps({
   node: Object, // 确保 node prop 存在
+  // activeNodeId 应该从父组件注入，这里不需要作为 prop
+  // isActive: Boolean, // 如果需要高亮，应该在父组件NodeEdit.vue中通过 isActive prop 传递
 });
 
 const emit = defineEmits(['update-data', 'redo-node', 'download-result', 'continue-flow']);
@@ -62,9 +70,12 @@ const safeNodeData = computed(() => {
   return data || {
     title: '加载中...',
     prompt: '',
-    output: { text: '', images: [], error: null },
+    output: { text: '', images: [], error: null }, // 确保 output 结构完整
     status: 'idle',
     isInitialNode: false,
+    // 默认值，如果 NodeEdit.vue 没有设置，这里提供一个 fallback
+    // 在 NodeEdit.vue 中设置更严谨，这里只是兜底
+    generationType: 'text',
   };
 });
 
@@ -121,6 +132,19 @@ const emitContinue = () => {
     emit('continue-flow', props.node.id);
   } else {
     console.warn("Attempted to continue flow from an undefined node.", props.node);
+  }
+};
+
+const copyTextOutput = () => {
+  if (safeNodeData.value.output?.text) {
+    navigator.clipboard.writeText(safeNodeData.value.output.text)
+      .then(() => {
+        alert('文本已复制到剪贴板！');
+      })
+      .catch(err => {
+        console.error('复制失败:', err);
+        alert('复制文本失败，请手动复制。');
+      });
   }
 };
 </script>
@@ -208,17 +232,27 @@ const emitContinue = () => {
   min-height: 100px;
   border: 1px dashed var(--color-divider);
   border-radius: var(--border-radius-small);
+  display: flex; /* 让内部内容能够垂直排列 */
+  flex-direction: column;
+  justify-content: flex-start; /* 保持内容顶部对齐 */
+  align-items: flex-start; /* 保持内容左对齐 */
+  background-color: var(--color-neutral-light);
+  padding: 10px;
+  text-align: left; /* 确保文本左对齐 */
+  gap: 10px; /* 文本和图片之间有间距 */
+  overflow: hidden; /* 隐藏溢出内容，内部容器会滚动 */
+}
+
+/* loading, error, placeholder 的样式保持不变 */
+.loading-indicator, .error-display, .placeholder {
+  color: var(--color-description);
+  width: 100%; /* 确保它们占据整个宽度 */
+  text-align: center; /* 居中显示 */
+  flex-grow: 1; /* 占据可用空间 */
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background-color: var(--color-neutral-light);
-  padding: 10px;
-  text-align: center;
-}
-
-.loading-indicator, .error-display, .placeholder {
-  color: var(--color-description);
 }
 
 .spinner {
@@ -240,21 +274,63 @@ const emitContinue = () => {
   font-weight: 500;
 }
 
-.image-display img {
-  max-width: 100%;
-  max-height: 80px; /* 控制预览图大小 */
-  object-fit: contain;
-  border-radius: var(--border-radius-small);
-  margin-bottom: 5px;
+/* 新增或修改的输出内容容器样式 */
+.generated-content-display {
+  width: 100%;
+  display: flex;
+  flex-direction: column; /* 文本和图片垂直排列 */
+  gap: 10px; /* 文本和图片之间的间距 */
+  overflow-y: auto; /* 允许这个总容器滚动 */
+  flex-grow: 1; /* 占据 output-area 的剩余空间 */
 }
 
-.output-text {
-  font-size: var(--font-size-small);
+.text-output-display {
+  position: relative; /* 用于复制按钮定位 */
+  padding-right: 30px; /* 为复制按钮留出空间 */
+  box-sizing: border-box;
+}
+
+.generated-text-content {
+  margin: 0;
+  font-size: var(--font-size-body);
   color: var(--color-text-body);
-  max-height: 40px; /* 限制文本高度 */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: pre-wrap; /* 保持换行符和空格 */
+  text-align: left;
+  word-wrap: break-word; /* 防止长单词溢出 */
+}
+
+.copy-button {
+  position: absolute;
+  top: 0px; /* 与文本顶部对齐 */
+  right: 0px;
+  padding: 2px 5px;
+  font-size: var(--font-size-small);
+  background-color: var(--theme-color-40);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--border-radius-small);
+  cursor: pointer;
+  opacity: 0; /* 默认隐藏 */
+  transition: opacity 0.2s ease;
+}
+
+.text-output-display:hover .copy-button {
+  opacity: 1; /* 鼠标悬停时显示 */
+}
+
+
+.image-output-display {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* max-height: 120px; */ /* 如果图片希望独立控制高度，可以在这里设置 */
+}
+
+.image-output-display img {
+  max-width: 100%;
+  max-height: 120px; /* 控制图片最大高度，防止过大 */
+  object-fit: contain;
+  border-radius: var(--border-radius-small);
 }
 
 
