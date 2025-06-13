@@ -8,8 +8,7 @@ const axios = require('axios');
  */
 async function callLLM({ payload, prompt, model, apiUrl, apiKey }) {
   const finalApiKey = apiKey || process.env.LLM_API_KEY;
-  const finalUrl = apiUrl || process.env.LLM_API_URL ||
-    'https://api.openai.com/v1/chat/completions';
+  const finalUrl = apiUrl || process.env.LLM_API_URL;
 
   if (!finalApiKey) {
     throw new Error('LLM API key not configured');
@@ -17,8 +16,9 @@ async function callLLM({ payload, prompt, model, apiUrl, apiKey }) {
 
   // If a full payload is provided use it directly, otherwise build the
   // default chat-completion body from the prompt and model.
+  // 需要更改model！
   const body = payload || {
-    model: model || process.env.LLM_MODEL || 'gpt-3.5-turbo',
+    model: model || process.env.LLM_MODEL || 'deepseek-v3',
     messages: [{ role: 'user', content: prompt }]
   };
 

@@ -19,5 +19,6 @@ CREATE TABLE `wensoul_user` (
 -- 插入示例数据
 INSERT INTO `wensoul_user` (`username`, `password`, `email`, `phone`, `current_plan_id`,`status`) VALUES 
 ('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iKVjzieMwfcpO7E3nJfnqHJKMM/K', 'admin@example.com', '13800138000', 3, 1),
-('testuser', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iKVjzieMwfcpO7E3nJfnqHJKMM/K', 'test@example.com', '13900139000', 2, 1); 
+('testuser', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iKVjzieMwfcpO7E3nJfnqHJKMM/K', 'test@example.com', '13900139000', 2, 1),
+('lmx', 'liumingxuan0039$', 'test1@example.com', '11111111111111', 3, 1); 
 SET FOREIGN_KEY_CHECKS = 1;

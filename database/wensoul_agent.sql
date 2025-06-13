@@ -16,13 +16,14 @@ CREATE TABLE `wensoul_agent` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='智能体信息表';
 
 -- 插入使用新工作流结构的模拟数据
+-- 需要更改model
 INSERT INTO `wensoul_agent` (`agent_name`, `agent_description`, `workflow`) VALUES
 ('市场趋势分析', '结合多模型进行市场数据与趋势分析', '[
   {
     "nodeId": "step1_analyze_market",
     "nodeName": "分析市场数据",
     "nodeType": "text-to-text",
-    "model": "gpt-4-turbo",
+    "model": "deepseek-v3", 
     "promptTemplate": "请根据以下市场信息，分析其主要趋势、机遇和挑战：\n\n{{input}}"
   }
 ]'),
@@ -31,7 +32,7 @@ INSERT INTO `wensoul_agent` (`agent_name`, `agent_description`, `workflow`) VALU
     "nodeId": "step1_generate_copy",
     "nodeName": "生成营销文案",
     "nodeType": "text-to-text",
-    "model": "gpt-4o",
+    "model": "deepseek-v3",
     "promptTemplate": "为一款产品或服务（产品信息：{{input}}）生成五条不同风格的爆款营销文案。"
   }
 ]'),
@@ -40,7 +41,7 @@ INSERT INTO `wensoul_agent` (`agent_name`, `agent_description`, `workflow`) VALU
     "nodeId": "step1_refine_concept",
     "nodeName": "提炼核心设计元素",
     "nodeType": "text-to-text",
-    "model": "gpt-4-turbo",
+    "model": "deepseek-v3",
     "promptTemplate": "根据以下产品创意（{{input}}），提炼出5-7个核心视觉设计关键词，用于后续的图像生成。"
   },
   {
