@@ -43,9 +43,10 @@ async function runAgent(agentId, initialInput) {
         apiUrl = process.env.T2I_API_URL;
         payload = {
           prompt,
-          model: model || process.env.LLM_MODEL,
-          n: 1,
-          size: '1024x1024'
+          model: model,
+          "-num_images_per_prompt": 1, 
+          "-height": 1024,             
+          "-width": 1024               
         };
         break;
       case 'image-to-image':
@@ -75,20 +76,30 @@ async function runAgent(agentId, initialInput) {
     });
 
     // 这里需要根据不同API的返回结构来解析输出
-    // 例如，文本API返回在 choices[0].message.content
-    // 图片API可能返回在 data[0].url
     if (nodeType === 'text-to-text') {
       if (result.choices && result.choices.length > 0) {
         context = result.choices[0].message.content;
       } else {
         throw new Error('LLM call returned no text choices.');
       }
-    } else if (nodeType === 'text-to-image' || nodeType === 'image-to-image') {
-      if (result.data && result.data.length > 0) {
-        context = result.data[0].url; // 假设返回图片URL
+    } else if (nodeType === 'text-to-image') {
+      // --- 修改开始 ---
+      // 检查 API 是否成功接收了任务
+      if (result && result.code === '0' && result.lid) {
+        // 直接返回任务 ID (lid)，而不是尝试寻找不存在的图片 URL
+        context = `任务已提交，处理ID为: ${result.lid}`; 
       } else {
-        throw new Error('LLM call returned no image data.');
+        // 如果没有成功接收，则抛出更详细的错误
+        throw new Error(`Text-to-image task submission failed. API response: ${JSON.stringify(result)}`);
       }
+      // --- 修改结束 ---
+    } else if (nodeType === 'image-to-image') { 
+        // ... image-to-image 的逻辑也可能需要类似修改 ...
+        if (result.data && result.data.length > 0) {
+            context = result.data[0].url; 
+        } else {
+            throw new Error('LLM call returned no image data.');
+        }
     } else if (nodeType === 'image-to-model') {
       context = result;
     } else {
