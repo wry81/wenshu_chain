@@ -41,13 +41,24 @@ async function runAgent(agentId, initialInput) {
         break;
       case 'text-to-image':
         apiUrl = process.env.T2I_API_URL;
-        payload = {
-          prompt,
-          model: model,
-          "-num_images_per_prompt": 1, 
-          "-height": 1024,             
-          "-width": 1024               
+
+        // 1. 创建一个 FormData 实例
+        const formData = new FormData();
+
+        // 2. 将高级参数构建为一个对象
+        const advancedOptions = {
+          "height": 1024,
+          "width": 1024,
+          "num_images_per_prompt": 1
         };
+
+        // 3. 按照 --form 的要求，分别追加 prompt 和 advanced_opt 字段
+        formData.append('prompt', prompt);
+        formData.append('advanced_opt', JSON.stringify(advancedOptions));
+
+        // 4. 将 payload 设置为这个 FormData 实例
+        payload = formData;
+        
         break;
       case 'image-to-image':
         apiUrl = process.env.I2I_API_URL;
