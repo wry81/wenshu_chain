@@ -11,7 +11,6 @@
       <label>Prompt:</label>
       <textarea
         v-model="internalPrompt"
-        @input="emitUpdateData('prompt', internalPrompt)"
         placeholder="输入Prompt..."
         rows="3"
       ></textarea>
@@ -85,9 +84,12 @@ const internalPrompt = ref(safeNodeData.value.prompt);
 
 // 监听 safeNodeData.prompt 的变化，更新 local ref
 // 确保 watch 监听的是一个稳定的、可访问的属性
-watch(() => safeNodeData.value.prompt, (newVal) => {
-  internalPrompt.value = newVal;
-}, { immediate: true }); // 立即执行一次，确保初始化
+watch(internalPrompt, (newValue) => {
+  // 添加一个安全检查，确保 props.node 存在后再执行
+  if (props.node) {
+    emit('update-data', { nodeId: props.node.id, key: 'prompt', value: newValue });
+  }
+});
 
 // 注入父组件的 activeNodeId
 const activeNodeId = inject('activeNodeId', null); // 确保在模板中使用了 activeNodeId

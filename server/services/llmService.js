@@ -18,7 +18,7 @@ async function callLLM({ payload, prompt, model, apiUrl, apiKey }) {
   // default chat-completion body from the prompt and model.
   // 需要更改model！
   const body = payload || {
-    model: model || process.env.LLM_MODEL || 'deepseek-v3',
+    model: model || process.env.LLM_MODEL,
     messages: [{ role: 'user', content: prompt }]
   };
 

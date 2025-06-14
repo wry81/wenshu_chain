@@ -39,7 +39,7 @@
             </div> -->
           </form>
           <div class="footer">
-            <button type="button" class="custom-button primary-button" @click="handleRegister">登录</button>
+            <button type="button" class="custom-button primary-button" @click="handleLogin">登录</button>
             <button type="button" class="custom-button register-button" @click="goToRegister">注册</button>
           </div>
         </div>
@@ -49,28 +49,57 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   data() {
     return {
-      email: '',
+      email: '',      // 将作为 username 或 email 发送
       password: '',
-      confirmPassword: '',
-      inviteCode: '',
-      agreeTerms: false
+      inviteCode: '', // 登录时不需要验证码，但保留以匹配UI
     };
   },
   methods: {
-    handleRegister() {
-      console.log('登录信息:', {
-        email: this.email,
-        password: this.password,
-        confirmPassword: this.confirmPassword,
-        inviteCode: this.inviteCode,
-        agreeTerms: this.agreeTerms
-      });
-      this.$router.push('/main');
+    // 方法名从 handleRegister 修改为 handleLogin，更符合其功能
+    async handleLogin() {
+      // 检查用户是否输入了内容
+      if (!this.email || !this.password) {
+        alert('请输入用户名/邮箱和密码！');
+        return;
+      }
+
+      // 使用 try...catch 结构来处理成功和失败的情况
+      try {
+        // 发送 POST 请求到后端的登录接口
+        const response = await axios.post('/api/auth/login', {
+          username: this.email, // 将输入框的内容作为 username 发送
+          password: this.password
+        });
+
+        // 检查后端是否成功返回了 token
+        if (response.data.token) {
+          // 登录成功，将 token 存储到浏览器的 localStorage
+          localStorage.setItem('token', response.data.token);
+          
+          alert('登录成功！');
+          
+          // 跳转到主应用页面
+          this.$router.push('/main');
+        } else {
+          // 如果后端没有返回 token，也视为失败
+          throw new Error('未能从服务器获取Token，请稍后再试。');
+        }
+      } catch (error) {
+        // 如果请求失败（如网络错误、服务器返回错误状态码）
+        console.error('登录失败:', error.response ? error.response.data : error.message);
+        
+        // 从后端返回的错误信息中提取 message 字段显示给用户
+        const errorMessage = error.response?.data?.message || '登录时发生未知错误';
+        alert(`登录失败: ${errorMessage}`);
+      }
     },
     goToRegister() {
+      // 跳转到注册页面的方法保持不变
       this.$router.push('/register');
     }
   }

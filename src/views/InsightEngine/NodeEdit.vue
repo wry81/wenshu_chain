@@ -44,7 +44,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount, computed, provide, inject } from 'vue';
+import { ref, watch, onMounted, onBeforeUnmount, computed, provide, inject, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { VueFlow, useVueFlow, Background, Controls, Position } from '@vue-flow/core';
 import '@vue-flow/core/dist/style.css';
@@ -177,14 +177,30 @@ const updateNodeData = ({ nodeId, key, value }) => {
 };
 
 // 触发单个节点“重做”
+// const redoNode = async (nodeId) => {
+//   const node = getNodes.value.find(n => n.id === nodeId);
+//   if (node) {
+//     // 重置节点状态
+//     updateNodeData({ nodeId, key: 'output', value: { text: '', images: [] } });
+//     updateNodeData({ nodeId, key: 'status', value: 'loading' });
+//     await generateContentForNode(node);
+//     // generateContentForNode 内部会更新状态，这里不再需要
+//   }
+// };
+// 触发单个节点“重做”
 const redoNode = async (nodeId) => {
   const node = getNodes.value.find(n => n.id === nodeId);
   if (node) {
     // 重置节点状态
     updateNodeData({ nodeId, key: 'output', value: { text: '', images: [] } });
     updateNodeData({ nodeId, key: 'status', value: 'loading' });
-    await generateContentForNode(node);
-    // generateContentForNode 内部会更新状态，这里不再需要
+
+    // 等待DOM和响应式数据更新完成
+    await nextTick(); 
+
+    // 确保现在读取的是最新状态
+    const updatedNode = getNodes.value.find(n => n.id === nodeId);
+    await generateContentForNode(updatedNode);
   }
 };
 
@@ -261,100 +277,131 @@ const resetAllNodes = () => {
 };
 
 // 运行整个工作流
+// const runWorkflow = async () => {
+//   if (isGeneratingAll.value) return;
+
+//   isGeneratingAll.value = true;
+//   const nodesToProcess = progressNodes.value; // 获取所有步骤节点
+
+//   for (const node of nodesToProcess) {
+//     activeNodeId.value = node.id; // 激活当前处理的节点
+//     updateNodeData({ nodeId: node.id, key: 'status', value: 'loading' });
+//     await generateContentForNode(node); // 调用生成内容的方法
+//     // generateContentForNode 内部会根据结果更新状态，这里不再需要额外的判断
+//     // 如果 generateContentForNode 内部抛出错误，循环也会中断
+//     if (node.data.status === 'error') {
+//         alert(`节点 ${node.data.title} 生成失败，流程终止！`);
+//         isGeneratingAll.value = false;
+//         return; // 遇到错误时停止整个流程
+//     }
+//   }
+//   isGeneratingAll.value = false;
+//   activeNodeId.value = null; // 全部完成后取消激活
+//   alert('所有节点内容生成完成！');
+// };
+// 运行整个工作流
 const runWorkflow = async () => {
   if (isGeneratingAll.value) return;
 
   isGeneratingAll.value = true;
-  const nodesToProcess = progressNodes.value; // 获取所有步骤节点
+  const nodesToProcess = progressNodes.value;
 
   for (const node of nodesToProcess) {
-    activeNodeId.value = node.id; // 激活当前处理的节点
+    activeNodeId.value = node.id;
     updateNodeData({ nodeId: node.id, key: 'status', value: 'loading' });
-    await generateContentForNode(node); // 调用生成内容的方法
-    // generateContentForNode 内部会根据结果更新状态，这里不再需要额外的判断
-    // 如果 generateContentForNode 内部抛出错误，循环也会中断
-    if (node.data.status === 'error') {
-        alert(`节点 ${node.data.title} 生成失败，流程终止！`);
+    
+    // 等待状态更新
+    await nextTick();
+
+    const updatedNode = getNodes.value.find(n => n.id === node.id);
+    await generateContentForNode(updatedNode); 
+
+    if (updatedNode.data.status === 'error') {
+        alert(`节点 ${updatedNode.data.title} 生成失败，流程终止！`);
         isGeneratingAll.value = false;
-        return; // 遇到错误时停止整个流程
+        return;
     }
   }
   isGeneratingAll.value = false;
-  activeNodeId.value = null; // 全部完成后取消激活
+  activeNodeId.value = null;
   alert('所有节点内容生成完成！');
 };
 
-
 // 核心：调用后端API生成内容
 // 这个函数会被每个节点的“运行”或“重做”触发，以及“全部运行”时循环触发
+// 核心：调用后端API生成内容
+// 核心：调用后端API生成内容（带有调试日志的版本）
 const generateContentForNode = async (node) => {
+  console.log('--- [调试开始] ---');
+  console.log('1. generateContentForNode 函数被调用，节点信息:', node);
+
   const currentPrompt = node.data.prompt;
+  console.log('2. 获取到的 Prompt 内容:', currentPrompt);
 
   if (!currentPrompt) {
+    alert('Prompt 不能为空！');
+    console.log('!! [调试中止] 原因: Prompt 为空。');
     updateNodeData({ nodeId: node.id, key: 'status', value: 'error' });
-    updateNodeData({ nodeId: node.id, key: 'output', value: { text: 'Prompt不能为空', images: [], error: 'Prompt不能为空' } });
+    updateNodeData({ nodeId: node.id, key: 'output', value: { text: '', images: [], error: 'Prompt不能为空' } });
     return;
   }
 
-  // 获取前一个节点的输出，作为当前节点生成内容的上下文
-  let previousOutputText = '';
-  let previousOutputImages = [];
-  const incomingEdges = getEdges.value.filter(edge => edge.target === node.id);
-  if (incomingEdges.length > 0) {
-    const previousNodeId = incomingEdges[0].source; // 假设只连接一个前置节点
-    const previousNode = getNodes.value.find(n => n.id === previousNodeId);
-    if (previousNode && previousNode.data.output) {
-      previousOutputText = previousNode.data.output.text || '';
-      previousOutputImages = previousNode.data.output.images || [];
-    }
+  console.log('3. 准备从 localStorage 获取 token...');
+  const token = localStorage.getItem('token');
+  console.log('4. 获取到的 token:', token); // 检查这里打印出来的是否为 null 或空字符串
+
+  if (!token) {
+    alert('您尚未登录，请先登录！');
+    console.log('!! [调试中止] 原因: token 为空，用户未认证。');
+    updateNodeData({ nodeId: node.id, key: 'status', value: 'error' });
+    updateNodeData({ nodeId: node.id, key: 'output', value: { text: '', images: [], error: '用户未认证' } });
+    router.push('/login');
+    return;
   }
 
+  console.log('5. 所有检查通过，准备执行 fetch...');
   try {
-    const response = await fetch('/api/generate_agent_content', { // 统一的后端API接口
+    const response = await fetch(`/api/agents/${props.agentId}/run`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({
-        agentId: props.agentId, // 传递智能体ID，后端据此判断身份
-        nodeId: node.id,
-        step: node.data.step,
-        prompt: currentPrompt,
-        context_text: previousOutputText, // 传递前一个节点的文本输出作为上下文
-        context_images: previousOutputImages, // 传递前一个节点的图片输出作为上下文
-        // 其他可能需要的参数，如图片风格、尺寸等
+        input: currentPrompt
       }),
     });
+    
+    console.log('6. fetch 请求已发送，等待响应...');
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || `API请求失败: ${response.status}`);
+      console.error('!! [调试错误] API 响应不成功:', response.status, errorData);
+      throw new Error(errorData.message || `API 请求失败: ${response.status}`);
     }
 
     const data = await response.json();
-    if (data.status === 'success') {
-      updateNodeData({
-        nodeId: node.id,
-        key: 'output',
-        value: {
-          text: data.text_output || '',
-          images: data.image_output || [],
-          error: null, // 清除之前的错误
-        },
-      });
-      updateNodeData({ nodeId: node.id, key: 'status', value: 'success' });
-    } else {
-      // 即使状态不是 success 也可能是成功响应，但业务逻辑失败
-      throw new Error(data.message || '内容生成失败');
-    }
+    console.log('7. 成功接收到后端数据:', data);
+
+    updateNodeData({
+      nodeId: node.id,
+      key: 'output',
+      value: { text: data.result || '', images: [], error: null },
+    });
+    updateNodeData({ nodeId: node.id, key: 'status', value: 'success' });
+    console.log('--- [调试结束] ---');
+
   } catch (error) {
-    console.error(`节点 ${node.id} 内容生成失败:`, error);
+    console.error('!! [调试错误] 在 try...catch 块中捕获到错误:', error);
+    // 截图中的弹窗就是由下面这行代码触发的
+    alert(`节点 ${node.data.title} 生成失败，流程终止！`);
     updateNodeData({
       nodeId: node.id,
       key: 'output',
       value: { text: '', images: [], error: error.message || '生成失败' },
     });
     updateNodeData({ nodeId: node.id, key: 'status', value: 'error' });
+    console.log('--- [调试结束] ---');
   }
 };
 

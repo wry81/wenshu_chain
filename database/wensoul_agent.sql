@@ -48,7 +48,7 @@ INSERT INTO `wensoul_agent` (`agent_name`, `agent_description`, `workflow`) VALU
     "nodeId": "step2_generate_images",
     "nodeName": "生成概念图",
     "nodeType": "text-to-image",
-    "model": "dall-e-3",
+    "model": "unicom_t2i",
     "promptTemplate": "A high-detail concept art of a product based on the following elements: {{input}}"
   },
   {
@@ -57,6 +57,7 @@ INSERT INTO `wensoul_agent` (`agent_name`, `agent_description`, `workflow`) VALU
     "nodeType": "image-to-model",
     "model": "internal-3d-generator-v2",
     "promptTemplate": ""
-  }
+  },
+  
 ]');
 SET FOREIGN_KEY_CHECKS = 1;

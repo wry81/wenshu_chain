@@ -35,10 +35,13 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
-    return res.status(400).json({ message: 'Username and password required' });
+    return res.status(400).json({ message: '用户名/邮箱和密码不能为空' });
   }
   try {
-    const [rows] = await pool.query('SELECT id, password FROM wensoul_user WHERE username = ?', [username]);
+    const [rows] = await pool.query(
+      'SELECT id, password FROM wensoul_user WHERE username = ? OR email = ?', 
+      [username, username] // 将用户输入同时作为 username 和 email 的查询条件
+    );
     if (rows.length === 0) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
