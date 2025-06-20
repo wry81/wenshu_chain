@@ -712,7 +712,7 @@ const generateContentForNode = async (node) => {
   }
 
   try {
-    const response = await fetch('/api/generate_agent_content', {
+    const response = await fetch('/api/agents/${props.agentId}/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
