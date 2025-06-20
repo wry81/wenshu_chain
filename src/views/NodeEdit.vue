@@ -262,9 +262,6 @@ button:disabled {
 </style> -->
 <template>
   <div class="node-edit-page">
-    <h2>节点编辑</h2>
-    <p>当前编辑智能体ID: {{ agentId }}</p>
-
     <div class="nodes-scroll-container" ref="scrollContainer">
       <div class="nodes-track" :style="trackStyle">
         <div 
@@ -304,21 +301,21 @@ button:disabled {
 
           <div class="node-actions">
             <button 
-              class="action-btn" 
+              class="redo-btn" 
               @click.stop="redoNode(index)"
               :disabled="node.loading"
             >
               <span>重做</span>
             </button>
             <button 
-              class="action-btn" 
+              class="download-btn" 
               @click.stop="downloadResult(index)"
               :disabled="!node.result || node.loading"
             >
               <span>下载结果</span>
             </button>
             <button 
-              class="action-btn continue-btn" 
+              class="continue-btn" 
               @click.stop="focusNextNode"
               :disabled="index === nodes.length - 1 || node.loading"
             >
@@ -330,6 +327,10 @@ button:disabled {
     </div>
 
     <div class="task-bar">
+      <button class="exit-btn" @click="exitEditor">
+        <span>退出</span>
+      </button>
+      
       <div class="progress-indicator">
         <div 
           v-for="(node, index) in nodes" 
@@ -343,26 +344,14 @@ button:disabled {
         ></div>
       </div>
       
-      <div class="global-actions">
-        <button class="global-btn exit-btn" @click="exitEditor">
-          <span>退出</span>
-        </button>
-        <button 
-          class="global-btn" 
-          @click="redoAllNodes"
-          :disabled="isAnyNodeLoading"
-        >
-          <span>全部重做</span>
-        </button>
-        <button 
-          class="global-btn run-btn" 
-          @click="runAllNodes"
-          :disabled="isAnyNodeLoading"
-        >
-          <span v-if="isRunning">运行中...</span>
-          <span v-else>运行</span>
-        </button>
-      </div>
+      <button class="redoall-btn" @click="redoAllNodes">
+        <span>全部重做</span>
+      </button>
+      
+      <button class="global-btn run-btn" @click="runAllNodes">
+        <span v-if="isRunning">运行中...</span>
+        <span v-else>运行</span>
+      </button>
     </div>
   </div>
 </template>
@@ -590,13 +579,14 @@ onMounted(() => {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 90vh;
 }
 
 h2 {
-  font-size: 24px;
+  font-size: var(--font-size-h2); /* H2 / 标题 / 26px */
+  font-weight: 600;
+  color: var(--color-title); /* 标题颜色 1F0C0C */
   margin-bottom: 10px;
-  color: #333;
 }
 
 .nodes-scroll-container {
@@ -757,14 +747,43 @@ h2 {
   left: 20px;
 }
 
+.redo-btn{
+  padding: 8px 40px;
+  border: none;
+  border-radius: 999px;
+  background-color: var(--color-divider);
+  color: var(--color-text-body);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+}
+
+.download-btn{
+  padding: 8px 40px;
+  border: 1px solid var(--theme-color-60);
+  border-radius: 999px;
+  background-color: #fff;
+  color: var(--theme-color-60);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+}
+
+.continue-btn{
+  padding: 8px 40px;
+  border: none;
+  border-radius: 999px;
+  background-color: var(--theme-color-60);
+  color: #fff;
+  cursor: pointer;
+  font-size: var(--font-size-body);
+}
+
 .action-btn {
   padding: 8px 16px;
   border: none;
-  border-radius: 6px;
-  background-color: #f0f0f0;
+  border-radius: 999px;
+  background-color: var(--color-divider);
   color: #333;
   cursor: pointer;
-  transition: all 0.2s;
 }
 
 .action-btn:hover {
@@ -776,27 +795,18 @@ h2 {
   cursor: not-allowed;
 }
 
-.continue-btn {
-  background-color: #4a90e2;
-  color: white;
-}
-
-.continue-btn:hover {
-  background-color: #3a7bc8;
-}
-
 .task-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: white;
-  padding: 15px 20px;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  height: 80px;
+  width: 1000px;
+  background-color: #fff;
+  border-radius: var(--border-radius-large);
+  box-shadow: var(--box-shadow-soft);
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 15px;
+  padding: 0 30px;
+  gap: 20px;
+  flex-shrink: 0;
+  margin: 20px auto 0; /* 修改这里 - 上下20px，左右auto */
 }
 
 .progress-indicator {
@@ -845,12 +855,27 @@ h2 {
 }
 
 .exit-btn {
-  background-color: #f8d7da;
-  color: #721c24;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 16px;
+  background-color: var(--color-divider);
+  color: var(--color-text-body);
+  cursor: pointer;
+  font-size: var(--font-size-body);
 }
 
 .exit-btn:hover {
   background-color: #f1b0b7;
+}
+
+.redoall-btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 16px;
+  background-color: var(--color-divider);
+  color: var(--color-text-body);
+  cursor: pointer;
+  font-size: var(--font-size-body);
 }
 
 .run-btn {
