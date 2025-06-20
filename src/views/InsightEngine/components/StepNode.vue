@@ -26,7 +26,7 @@
         </div>
         <div v-else-if="safeNodeData.output?.text || (safeNodeData.output?.images && safeNodeData.output.images.length > 0)" class="generated-content-display">
           <div v-if="safeNodeData.output?.text" class="text-output-display">
-            <p class="generated-text-content">{{ safeNodeData.output.text }}</p>
+            <div class="generated-text-content" v-html="renderedMarkdown"></div>
             <button class="copy-button" @click="copyTextOutput">复制</button>
           </div>
 
@@ -53,6 +53,7 @@
 <script setup>
 import { defineProps, defineEmits, ref, watch, inject, computed } from 'vue';
 import { Handle, Position } from '@vue-flow/core';
+import { marked } from 'marked';
 
 const props = defineProps({
   node: Object, // 确保 node prop 存在
@@ -102,6 +103,13 @@ const displayStatus = computed(() => {
     case 'error': return '失败';
     default: return '未知'; // 添加默认状态
   }
+});
+
+const renderedMarkdown = computed(() => {
+  if (safeNodeData.value.output?.text) {
+    return marked.parse(safeNodeData.value.output.text);
+  }
+  return '';
 });
 
 const emitUpdateData = (key, value) => {
