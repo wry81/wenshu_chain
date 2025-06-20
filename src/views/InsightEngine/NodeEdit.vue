@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
   <div class="node-edit-page">
     <div class="editor-container">
       <VueFlow
@@ -41,9 +41,10 @@
       </div>
     </div>
   </div>
-</template>
+</template> -->
 
-<script setup>
+<!-- <script setup>
+
 import { ref, watch, onMounted, onBeforeUnmount, computed, provide, inject, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { VueFlow, useVueFlow, Background, Controls, Position } from '@vue-flow/core';
@@ -159,22 +160,39 @@ const initializeFirstNode = () => {
   console.log('NodeEdit.vue: First node object created and passed to addNodes:', initialNode);
 };
 
-// 更新节点数据
+// Corrected version
 const updateNodeData = ({ nodeId, key, value }) => {
   setNodes((nds) =>
     nds.map((node) => {
       if (node.id === nodeId) {
-        // 针对嵌套对象，进行深拷贝或更新
         if (key === 'output') {
           node.data.output = { ...node.data.output, ...value };
         } else {
-          node.data = { ...node.data, [key]: value };
+          // Correctly mutate the property on the existing data object
+          node.data[key] = value; 
         }
       }
       return node;
     })
   );
 };
+
+// // 更新节点数据
+// const updateNodeData = ({ nodeId, key, value }) => {
+//   setNodes((nds) =>
+//     nds.map((node) => {
+//       if (node.id === nodeId) {
+//         // 针对嵌套对象，进行深拷贝或更新
+//         if (key === 'output') {
+//           node.data.output = { ...node.data.output, ...value };
+//         } else {
+//           node.data = { ...node.data, [key]: value };
+//         }
+//       }
+//       return node;
+//     })
+//   );
+// };
 
 // 触发单个节点“重做”
 // const redoNode = async (nodeId) => {
@@ -435,6 +453,327 @@ const handleToggleSidebar = (state) => {
   // 实际上这里不需要做什么，因为侧边栏的开关在 Main.vue 层面控制
   // 只是让这个组件知道 Main.vue 的侧边栏被控制了
   // 如果需要根据侧边栏状态调整画布布局，可以在这里处理
+};
+</script> -->
+
+<template>
+  <div class="node-edit-page">
+    <div class="editor-container">
+      <VueFlow
+        :fit-view-on-init="true"
+        :snap-to-grid="true"
+        :snap-grid="[15, 15]"
+        @node-drag-stop="onNodeDragStop"
+        @pane-ready="onPaneReady"
+      >
+        <template #node-stepNode="nodeProps">
+          <StepNode
+            :node="nodeProps.node"
+            @update-data="updateNodeData"
+            @redo-node="redoNode"
+            @download-result="downloadResult"
+            @continue-flow="addNextNode"
+          />
+        </template>
+
+        <Controls />
+      </VueFlow>
+    </div>
+
+    <div class="bottom-toolbar">
+      <button class="toolbar-btn" @click="exitEditor">退出</button>
+      <button class="toolbar-btn" @click="resetAllNodes">全部重做</button>
+      <button class="toolbar-btn primary" @click="runWorkflow" :disabled="isGeneratingAll">
+        {{ isGeneratingAll ? '运行中...' : '运行' }}
+      </button>
+
+      <div class="progress-bar-container">
+        <ProgressBar
+          :nodes="progressNodes"
+          :current-node-id="activeNodeId"
+          @jump-to-node="jumpToNode"
+        />
+      </div>
+    </div>
+  </div>
+</template>
+
+
+<script setup>
+import { ref, watch, onMounted, onBeforeUnmount, computed, provide } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+// 导入 Vue Flow 核心功能
+import { VueFlow, useVueFlow, Background, Controls, Position } from '@vue-flow/core';
+import '@vue-flow/core/dist/style.css';
+import '@vue-flow/core/dist/theme-default.css';
+
+import StepNode from './components/StepNode.vue';
+import ProgressBar from './components/ProgressBar.vue';
+
+const props = defineProps({
+  agentId: String,
+});
+
+// --- 正确且简化的状态管理模式 ---
+// 1. 直接调用 useVueFlow，不传递任何参数
+// 它会返回自身管理的、响应式的 nodes, edges 等
+const { nodes, edges, onConnect, addNodes, addEdges, setNodes, setEdges, fitView, onPaneReady, onNodeDragStop, getNodes, getEdges } = useVueFlow();
+
+
+const nodeIdCounter = ref(1);
+const isGeneratingAll = ref(false);
+const activeNodeId = ref(null);
+provide('activeNodeId', activeNodeId);
+
+const isInitialLoad = ref(true);
+
+// progressNodes 现在可以直接依赖于 useVueFlow 返回的 nodes
+const progressNodes = computed(() => {
+  return nodes.value
+    .filter(node => node.type === 'stepNode')
+    .sort((a, b) => {
+        const aNum = parseInt(a.id.split('_')[1] || '0');
+        const bNum = parseInt(b.id.split('_')[1] || '0');
+        return aNum - bNum;
+    });
+});
+
+const emit = defineEmits(['toggle-sidebar']);
+const router = useRouter();
+
+onMounted(() => {
+  console.log('NodeEdit.vue: Component mounted.');
+  emit('toggle-sidebar', false);
+  initializeFirstNode();
+  isInitialLoad.value = false;
+});
+
+onBeforeUnmount(() => {
+  emit('toggle-sidebar', true);
+});
+
+onConnect((params) => {
+  addEdges([params]);
+});
+
+const initializeFirstNode = () => {
+  const initialNode = {
+    id: `step_${nodeIdCounter.value++}`,
+    type: 'stepNode',
+    position: { x: 100, y: 100 },
+    data: {
+      step: 1,
+      title: '步骤1：选择设计主题',
+      prompt: '',
+      output: { text: '', images: [] },
+      status: 'idle',
+      isInitialNode: true,
+    },
+    sourcePosition: Position.Right,
+    targetPosition: Position.Left,
+  };
+  addNodes([initialNode]);
+  activeNodeId.value = initialNode.id;
+};
+
+// updateNodeData 现在操作由 useVueFlow 返回的 nodes
+const updateNodeData = ({ nodeId, key, value }) => {
+  const node = nodes.value.find((n) => n.id === nodeId);
+  if (node) {
+    const newData = { ...node.data };
+    if (key === 'output') {
+      newData.output = { ...newData.output, ...value };
+    } else {
+      newData[key] = value;
+    }
+    node.data = newData;
+  }
+};
+
+const redoNode = async (nodeId) => {
+  const nodeToRedo = nodes.value.find(n => n.id === nodeId);
+  if (nodeToRedo) {
+    updateNodeData({ nodeId, key: 'output', value: { text: '', images: [] } });
+    updateNodeData({ nodeId, key: 'status', value: 'loading' });
+    await generateContentForNode(nodeToRedo);
+  }
+};
+
+const downloadResult = (nodeId) => {
+  const node = nodes.value.find(n => n.id === nodeId);
+  if (node && node.data.output.images && node.data.output.images.length > 0) {
+    const imgData = node.data.output.images[0];
+    const link = document.createElement('a');
+    link.href = `data:image/png;base64,${imgData}`;
+    link.download = `agent_${props.agentId}_step_${node.data.step}_image.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    alert('图片已开始下载！');
+  } else {
+    alert('没有可下载的图片！');
+  }
+};
+
+const addNextNode = (currentNodeId) => {
+  const currentNode = nodes.value.find(n => n.id === currentNodeId);
+  if (!currentNode) return;
+
+  const nextStep = currentNode.data.step + 1;
+  const newNodeId = `step_${nodeIdCounter.value++}`;
+  const newNode = {
+    id: newNodeId,
+    type: 'stepNode',
+    position: { x: currentNode.position.x + 350, y: currentNode.position.y },
+    data: {
+      step: nextStep,
+      title: `步骤${nextStep}：继续生成...`,
+      prompt: '',
+      output: { text: '', images: [] },
+      status: 'idle',
+    },
+    sourcePosition: Position.Right,
+    targetPosition: Position.Left,
+  };
+
+  const newEdge = {
+    id: `e${currentNodeId}-${newNodeId}`,
+    source: currentNodeId,
+    target: newNodeId,
+  };
+
+  addNodes([newNode]);
+  addEdges([newEdge]);
+  activeNodeId.value = newNodeId;
+  setTimeout(() => fitView(), 100);
+};
+
+const exitEditor = () => {
+  router.push('/main/insight-engine/smart-insight');
+};
+
+const resetAllNodes = () => {
+  if (confirm('确定要重置所有节点并回到初始状态吗？所有已生成内容将丢失！')) {
+    setNodes([]);
+    setEdges([]);
+    nodeIdCounter.value = 1;
+    initializeFirstNode();
+    alert('已重置所有节点。');
+  }
+};
+
+const runWorkflow = async () => {
+  if (isGeneratingAll.value) return;
+
+  isGeneratingAll.value = true;
+  const nodesToProcess = progressNodes.value;
+
+  for (const node of nodesToProcess) {
+    activeNodeId.value = node.id;
+    updateNodeData({ nodeId: node.id, key: 'status', value: 'loading' });
+
+    const currentNodeState = nodes.value.find(n => n.id === node.id);
+    if (currentNodeState) {
+        await generateContentForNode(currentNodeState);
+    }
+    
+    const updatedNodeState = nodes.value.find(n => n.id === node.id);
+    if (updatedNodeState && updatedNodeState.data.status === 'error') {
+        alert(`节点 ${updatedNodeState.data.title} 生成失败，流程终止！`);
+        isGeneratingAll.value = false;
+        return;
+    }
+  }
+  isGeneratingAll.value = false;
+  activeNodeId.value = null;
+  alert('所有节点内容生成完成！');
+};
+
+const generateContentForNode = async (node) => {
+  const currentPrompt = node.data.prompt;
+  
+  console.log('获取到的 Prompt 内容:', currentPrompt);
+  if (!currentPrompt) {
+    updateNodeData({ nodeId: node.id, key: 'output', value: { text: 'Prompt不能为空', images: [], error: 'Prompt不能为空' } });
+    updateNodeData({ nodeId: node.id, key: 'status', value: 'error' });
+    return;
+  }
+
+  let previousOutputText = '';
+  let previousOutputImages = [];
+  const incomingEdges = edges.value.filter(edge => edge.target === node.id);
+  if (incomingEdges.length > 0) {
+    const previousNodeId = incomingEdges[0].source;
+    const previousNode = nodes.value.find(n => n.id === previousNodeId);
+    if (previousNode && previousNode.data.output) {
+      previousOutputText = previousNode.data.output.text || '';
+      previousOutputImages = previousNode.data.output.images || [];
+    }
+  }
+
+  try {
+    const response = await fetch('/api/generate_agent_content', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        agentId: props.agentId,
+        nodeId: node.id,
+        step: node.data.step,
+        prompt: currentPrompt,
+        context_text: previousOutputText,
+        context_images: previousOutputImages,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `API请求失败: ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (data.status === 'success') {
+      updateNodeData({
+        nodeId: node.id,
+        key: 'output',
+        value: { text: data.text_output || '', images: data.image_output || [], error: null },
+      });
+      updateNodeData({ nodeId: node.id, key: 'status', value: 'success' });
+    } else {
+      throw new Error(data.message || '内容生成失败');
+    }
+  } catch (error) {
+    console.error(`节点 ${node.id} 内容生成失败:`, error);
+    updateNodeData({
+      nodeId: node.id,
+      key: 'output',
+      value: { text: '', images: [], error: error.message || '生成失败' },
+    });
+    updateNodeData({ nodeId: node.id, key: 'status', value: 'error' });
+  }
+};
+
+const jumpToNode = (nodeId) => {
+  const targetNode = nodes.value.find(n => n.id === nodeId);
+  if (targetNode) {
+    fitView({
+      nodes: [targetNode],
+      duration: 500,
+      minZoom: 0.8,
+      maxZoom: 1.2,
+      padding: 0.5,
+    });
+    activeNodeId.value = nodeId;
+  }
+};
+
+watch(() => props.agentId, (newAgentId, oldAgentId) => {
+  if (!isInitialLoad.value && newAgentId && newAgentId !== oldAgentId) {
+    resetAllNodes();
+  }
+}, { immediate: true });
+
+const handleToggleSidebar = () => {
+  // 此事件由父组件处理
 };
 </script>
 
