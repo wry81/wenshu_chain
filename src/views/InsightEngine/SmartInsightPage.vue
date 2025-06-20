@@ -18,7 +18,7 @@
     </div>
 
     <div class="agent-grid">
-      <div class="agent-card" @click="selectAgent('agent1')">
+      <div class="agent-card" @click="selectAgent(1)">
         <img src="../../assets/bg1.png" alt="智能体图片" class="agent-card-image" />
         <h3 class="agent-name">小红书/抖音文创趋势分析</h3>
         <p class="agent-description">
