@@ -7,6 +7,7 @@ const llmRoutes = require('./routes/llm');
 const agentRoutes = require('./routes/agents');
 const agentPurchaseRoutes = require('./routes/agentPurchases');
 
+
 //验证是否调用了.env信息
 console.log('> DB HOST:', process.env.DB_HOST);
 console.log('> DB USER:', process.env.DB_USER);
