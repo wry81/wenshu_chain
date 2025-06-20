@@ -711,17 +711,22 @@ const generateContentForNode = async (node) => {
     }
   }
 
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('您尚未登录，请先登录！');
+    updateNodeData({ nodeId: node.id, key: 'status', value: 'error' });
+    return;
+  }
+
   try {
-    const response = await fetch('/api/agents/${props.agentId}/run', {
+    const response = await fetch(`/api/agents/${props.agentId}/run`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
       body: JSON.stringify({
-        agentId: props.agentId,
-        nodeId: node.id,
-        step: node.data.step,
-        prompt: currentPrompt,
-        context_text: previousOutputText,
-        context_images: previousOutputImages,
+        input: currentPrompt,
       }),
     });
 
@@ -731,11 +736,11 @@ const generateContentForNode = async (node) => {
     }
 
     const data = await response.json();
-    if (data.status === 'success') {
+    if (data.result !== undefined) {
       updateNodeData({
         nodeId: node.id,
         key: 'output',
-        value: { text: data.text_output || '', images: data.image_output || [], error: null },
+        value: { text: data.result || '', images: [], error: null },
       });
       updateNodeData({ nodeId: node.id, key: 'status', value: 'success' });
     } else {
