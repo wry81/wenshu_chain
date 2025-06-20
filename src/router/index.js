@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LoginPage from '../views/LoginPage.vue'
 import RegisterPage from '../views/RegisterPage.vue'
 import Main from '../views/Main.vue'
+import AgentTestPage from '../views/AgentTestPage.vue'
 
 // 顶级导航页面
 import InsightEnginePage from '../views/InsightEnginePage.vue';
@@ -20,6 +21,7 @@ import NodeEdit from '../views/InsightEngine/NodeEdit.vue';
 
 const routes = [
   { path: '/', redirect: '/login' },
+  { path: '/agent-test/:agentId?', component: AgentTestPage, props: true },
   { path: '/login', component: LoginPage },
   { path: '/register', component: RegisterPage },
   {
@@ -74,6 +76,13 @@ const routes = [
         name: 'KnowledgeBase',
         component: KnowledgeBasePage,
         meta: { topNav: 'knowledge-base' },
+      },
+      {
+        path: 'agent-test/:agentId?', // agentId 是可选的
+        name: 'AgentTestPage',
+        component: AgentTestPage,
+        meta: { topNav: 'agent-test' }, // 方便 Main.vue 识别
+        props: true,
       },
     ],
   },

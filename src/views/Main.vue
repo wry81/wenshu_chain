@@ -32,6 +32,12 @@
           >
             知识库
           </button>
+          <button
+            :class="['top-nav-btn', { 'top-nav-btn-selected': currentTopNav === 'agent-test' }]"
+            @click="handleTopNavClick('agent-test')"
+          >
+            Agent测试
+          </button>
         </nav>
         <div class="navbar-right">
           <button class="top-nav-icon-btn">
@@ -125,7 +131,12 @@ export default {
         } else if (newPath.startsWith('/main/knowledge-base')) {
           this.currentTopNav = 'knowledge-base';
           this.showSidebar = true;
-        } else {
+        } 
+          else if (newPath.startsWith('/main/agent-test')) {
+          this.currentTopNav = 'agent-test'; // 设置当前选中的顶部导航
+          this.showSidebar = false;
+        } // 测试页面通常不需要侧边栏，设置为 false
+        else {
           this.currentTopNav = '';
           this.showSidebar = true;
         }
@@ -152,6 +163,9 @@ export default {
         this.$router.push('/main/ip-activation-engine');
       } else if (navKey === 'knowledge-base') {
         this.$router.push('/main/knowledge-base');
+      }
+      else if (navKey === 'agent-test') {
+        this.$router.push('/main/agent-test/1'); // 默认跳转到 agentId 为 1 的测试页
       }
     },
     handleSidebarClick(sidebarKey, routePath) {
