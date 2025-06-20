@@ -16,7 +16,7 @@ import DashboardPage from '../views/InsightEngine/DashboardPage.vue';
 import SmartInsightPage from '../views/InsightEngine/SmartInsightPage.vue';
 import HistoryPage from '../views/InsightEngine/InsightHistoryPage.vue';
 // 修改这里：导入新的文件名
-import NodeEdit from '../views/InsightEngine/NodeEdit.vue';
+import NodeEdit from '../views/NodeEdit.vue';
 
 
 const routes = [
