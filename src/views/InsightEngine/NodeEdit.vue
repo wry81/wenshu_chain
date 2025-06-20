@@ -289,6 +289,7 @@ const runWorkflow = async () => {
 // 这个函数会被每个节点的“运行”或“重做”触发，以及“全部运行”时循环触发
 const generateContentForNode = async (node) => {
   const currentPrompt = node.data.prompt;
+  console.log('2. 获取到的 Prompt 内容:', currentPrompt);
 
   if (!currentPrompt) {
     updateNodeData({ nodeId: node.id, key: 'status', value: 'error' });
