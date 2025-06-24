@@ -59,30 +59,50 @@
           </div>
 
         <ul class="sidebar-menu">
-          <li
-            :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentInsightSidebarNav === '仪表盘' }]"
-            @click="handleSidebarClick('仪表盘', '/main/insight-engine/dashboard')"
-            data-selected="仪表盘"
-          >
-            <img src="../assets/DashboardFilled.svg" alt="仪表盘" class="icon-left" />
-            <span v-if="showSidebar">仪表盘</span>
-          </li>
-          <li
-            :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentInsightSidebarNav === '智能洞察' }]"
-            @click="handleSidebarClick('智能洞察', '/main/insight-engine/smart-insight')"
-            data-selected="智能洞察"
-          >
-            <img src="../assets/fire.svg" alt="智能洞察" class="icon-left" />
-            <span v-if="showSidebar">智能洞察</span>
-          </li>
-          <li
-            :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentInsightSidebarNav === '洞察历史' }]"
-            @click="handleSidebarClick('洞察历史', '/main/insight-engine/history')"
-            data-selected="洞察历史"
-          >
-            <img src="../assets/HistoryOutlined.svg" alt="洞察历史" class="icon-left" />
-            <span v-if="showSidebar">洞察历史</span>
-          </li>
+          <template v-if="currentTopNav === 'insight-engine'">
+            <li
+              :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentInsightSidebarNav === '仪表盘' }]"
+              @click="handleSidebarClick('仪表盘', '/main/insight-engine/dashboard')"
+              data-selected="仪表盘"
+            >
+              <img src="../assets/DashboardFilled.svg" alt="仪表盘" class="icon-left" />
+              <span v-if="showSidebar">仪表盘</span>
+            </li>
+            <li
+              :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentInsightSidebarNav === '智能洞察' }]"
+              @click="handleSidebarClick('智能洞察', '/main/insight-engine/smart-insight')"
+              data-selected="智能洞察"
+            >
+              <img src="../assets/fire.svg" alt="智能洞察" class="icon-left" />
+              <span v-if="showSidebar">智能洞察</span>
+            </li>
+            <li
+              :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentInsightSidebarNav === '洞察历史' }]"
+              @click="handleSidebarClick('洞察历史', '/main/insight-engine/history')"
+              data-selected="洞察历史"
+            >
+              <img src="../assets/HistoryOutlined.svg" alt="洞察历史" class="icon-left" />
+              <span v-if="showSidebar">洞察历史</span>
+            </li>
+          </template>
+          <template v-else-if="currentTopNav === 'narrative-engine'">
+            <li
+              :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentNarrativeSidebarNav === '智能生成' }]"
+              @click="handleNarrativeSidebarClick('智能生成', '/main/narrative-engine/smart-generation')"
+              data-selected="智能生成"
+            >
+              <img src="../assets/fire.svg" alt="智能生成" class="icon-left" />
+              <span v-if="showSidebar">智能生成</span>
+            </li>
+            <li
+              :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentNarrativeSidebarNav === '生成历史' }]"
+              @click="handleNarrativeSidebarClick('生成历史', '/main/narrative-engine/generation-history')"
+              data-selected="生成历史"
+            >
+              <img src="../assets/HistoryOutlined.svg" alt="生成历史" class="icon-left" />
+              <span v-if="showSidebar">生成历史</span>
+            </li>
+          </template>
         </ul>
       </aside>
 
@@ -101,6 +121,7 @@ export default {
       showSidebar: true, // 控制侧边栏展开/折叠的状态，默认为展开
       currentTopNav: 'insight-engine',
       currentInsightSidebarNav: '仪表盘',
+      currentNarrativeSidebarNav: '智能生成' //默认在侧边栏选中智能生成
     };
   },
   watch: {
@@ -124,7 +145,12 @@ export default {
           }
         } else if (newPath.startsWith('/main/narrative-engine')) {
           this.currentTopNav = 'narrative-engine';
-          this.showSidebar = true; // 其他顶级导航也默认展开侧边栏
+          this.showSidebar = true;
+          if (newPath.includes('smart-generation')) {
+            this.currentNarrativeSidebarNav = '智能生成';
+          } else if (newPath.includes('generation-history')) {
+            this.currentNarrativeSidebarNav = '生成历史';
+          }
         } else if (newPath.startsWith('/main/ip-activation-engine')) {
           this.currentTopNav = 'ip-activation-engine';
           this.showSidebar = true;
@@ -144,6 +170,10 @@ export default {
     },
   },
   methods: {
+    handleNarrativeSidebarClick(sidebarKey, routePath) {
+      this.currentNarrativeSidebarNav = sidebarKey;
+      this.$router.push(routePath);
+    },
     toggleSidebar() {
       this.showSidebar = !this.showSidebar;
     },
@@ -156,8 +186,10 @@ export default {
       // 点击顶部导航时，默认展开侧边栏 (如果需要)
       this.showSidebar = true;
       if (navKey === 'insight-engine') {
+        this.currentInsightSidebarNav = '仪表盘';
         this.$router.push('/main/insight-engine');
       } else if (navKey === 'narrative-engine') {
+        this.currentNarrativeSidebarNav = '智能生成'; 
         this.$router.push('/main/narrative-engine');
       } else if (navKey === 'ip-activation-engine') {
         this.$router.push('/main/ip-activation-engine');
@@ -362,28 +394,28 @@ export default {
 }
 
 .sidebar-menu-item:hover {
-  background-color: var(--theme-color-40);
-  color: var(--color-text-body);
+  background-color: var(--theme-color-60);
+  color: #fff;
 }
 
 /* 针对选中项的特定样式 */
 .sidebar-menu-item-selected {
   /* 基础选中样式，会被下面的 data-selected 覆盖或补充 */
-  background-color: var(--theme-color-40);
-  color: var(--color-text-body);
+  background-color: var(--theme-color-60);
+  color: #fff;
 }
-.sidebar-menu-item[data-selected="仪表盘"].sidebar-menu-item-selected {
-  background-color: var(--theme-color-40); /* 选中时的背景色 */
-  color: var(--color-text-body); /* 选中时的文字颜色 */
+/* .sidebar-menu-item[data-selected="仪表盘"].sidebar-menu-item-selected {
+  background-color: var(--theme-color-60); 
+  color: #fff; 
 }
 .sidebar-menu-item[data-selected="智能洞察"].sidebar-menu-item-selected {
-  background-color: var(--theme-color-40); /* 选中时的背景色 */
-  color: var(--color-text-body); /* 选中时的文字颜色 */
+  background-color: var(--theme-color-60); 
+  color: #fff; 
 }
 .sidebar-menu-item[data-selected="洞察历史"].sidebar-menu-item-selected {
-  background-color: var(--theme-color-40); /* 修正：你原先写的是 --color-color-40 */
-  color: var(--color-text-body); /* 选中时的文字颜色 */
-}
+  background-color: var(--theme-color-60); 
+  color: #fff; 
+} */
 
 /* 侧边栏折叠状态下的菜单项 */
 .sidebar-collapsed .sidebar-menu-item {
