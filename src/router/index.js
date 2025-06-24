@@ -21,6 +21,11 @@ import SmartGen from '../views/NarrativeEnginePage/SmartGen.vue'; // 新建文�
 import GenHistory from '../views/NarrativeEnginePage/GenHistory.vue'; // 新建文件
 import NodeEditNarrative from '../views/NodeEditNarrative.vue';
 
+// 新增：IPActivationEngine 子页面
+import SmartActive from '../views/IPActivationEnginePage/SmartActive.vue'; // 新建文件
+import ActiveHistory from '../views/IPActivationEnginePage/ActiveHistory.vue'; // 新建文件
+import NodeEditActive from '../views/NodeEditActive.vue';
+
 const routes = [
   { path: '/', redirect: '/login' },
   { path: '/agent-test/:agentId?', component: AgentTestPage, props: true },
@@ -77,18 +82,36 @@ const routes = [
         path: 'ip-activation-engine',
         component: IPActivationEnginePage,
         meta: { topNav: 'ip-activation-engine' },
+        redirect: '/main/ip-activation-engine/smart-active', // 默认重定向到智能生成
+        children: [
+          { 
+            path: 'smart-active', 
+            component: SmartActive,
+            meta: { sidebarNav: 'smart-active' } // 用于侧边栏高亮
+          },
+          { 
+            path: 'smart-active/:agentId/editor', 
+            component: NodeEditActive, 
+            props: true 
+          },
+          { 
+            path: 'active-history', 
+            component: ActiveHistory,
+            meta: { sidebarNav: 'active-history' }
+          }
+        ]
       },
       {
         path: 'knowledge-base',
         component: KnowledgeBasePage,
         meta: { topNav: 'knowledge-base' },
       },
-      {
-        path: 'agent-test/:agentId?',
-        component: AgentTestPage,
-        meta: { topNav: 'agent-test' },
-        props: true,
-      },
+      // {
+      //   path: 'agent-test/:agentId?',
+      //   component: AgentTestPage,
+      //   meta: { topNav: 'agent-test' },
+      //   props: true,
+      // },
     ],
   },
 ];

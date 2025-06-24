@@ -118,42 +118,42 @@ const scrollContainer = ref(null);
 let scrollTimeout = null;
 
 const nodes = ref([
-  {
-    title: '文化元素分析',
+    {
+    title: 'IP元素解构',
     prompt: '',
-    placeholder: '请输入想要分析的文化元素...',
+    placeholder: '深度分析现有IP的核心要素与市场定位, 提取DNA级特征标签...',
     result: '',
     completed: false,
     loading: false
   },
   {
-    title: '文旅IP生成',
+    title: '视觉原型生成',
     prompt: '',
-    placeholder: '请输入想要生成的文旅IP...',
+    placeholder: '请输入想要生成的文旅IP视觉原型风格...',
     result: '',
     completed: false,
     loading: false
   },
   {
-    title: 'IP设定构建',
+    title: '动态表情包创作',
     prompt: '',
-    placeholder: '请输入想要构建的IP设定...',
+    placeholder: '将静态形象转化为系列表情动画, 自动生成眨眼/口型等基础动作视频...',
     result: '',
     completed: false,
     loading: false
   },
   {
-    title: 'IP形象迭代',
+    title: '场景化延展',
     prompt: '',
-    placeholder: '请输入内容...',
+    placeholder: '生成IP在不同场景的应用效果图: 周边产品/海报/社交媒体模板等...',
     result: '',
     completed: false,
     loading: false
   },
   {
-    title: '文档生成',
+    title: '素材文档生成',
     prompt: '',
-    placeholder: '请输入总结内容...',
+    placeholder: '一键打包生成含多尺寸图片+短视频+文案的标准化传播素材库...',
     result: '',
     completed: false,
     loading: false

@@ -32,12 +32,12 @@
           >
             知识库
           </button>
-          <button
+          <!-- <button
             :class="['top-nav-btn', { 'top-nav-btn-selected': currentTopNav === 'agent-test' }]"
             @click="handleTopNavClick('agent-test')"
           >
             Agent测试
-          </button>
+          </button> -->
         </nav>
         <div class="navbar-right">
           <button class="top-nav-icon-btn">
@@ -85,6 +85,7 @@
               <span v-if="showSidebar">洞察历史</span>
             </li>
           </template>
+
           <template v-else-if="currentTopNav === 'narrative-engine'">
             <li
               :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentNarrativeSidebarNav === '智能生成' }]"
@@ -101,6 +102,25 @@
             >
               <img src="../assets/HistoryOutlined.svg" alt="生成历史" class="icon-left" />
               <span v-if="showSidebar">生成历史</span>
+            </li>
+          </template>
+
+          <template v-else-if="currentTopNav === 'ip-activation-engine'">
+            <li
+              :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentNarrativeSidebarNav === '智能活化' }]"
+              @click="handleNarrativeSidebarClick('智能活化', '/main/ip-activation-engine/smart-active')"
+              data-selected="智能活化"
+            >
+              <img src="../assets/fire.svg" alt="智能活化" class="icon-left" />
+              <span v-if="showSidebar">智能活化</span>
+            </li>
+            <li
+              :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentNarrativeSidebarNav === '活化历史' }]"
+              @click="handleNarrativeSidebarClick('活化历史', '/main/ip-activation-engine/active-history')"
+              data-selected="活化历史"
+            >
+              <img src="../assets/HistoryOutlined.svg" alt="活化历史" class="icon-left" />
+              <span v-if="showSidebar">活化历史</span>
             </li>
           </template>
         </ul>
@@ -154,14 +174,19 @@ export default {
         } else if (newPath.startsWith('/main/ip-activation-engine')) {
           this.currentTopNav = 'ip-activation-engine';
           this.showSidebar = true;
+          if (newPath.includes('smart-active')) {
+            this.currentNarrativeSidebarNav = '智能活化';
+          } else if (newPath.includes('active-history')) {
+            this.currentNarrativeSidebarNav = '活化历史';
+          }
         } else if (newPath.startsWith('/main/knowledge-base')) {
           this.currentTopNav = 'knowledge-base';
           this.showSidebar = true;
         } 
-          else if (newPath.startsWith('/main/agent-test')) {
-          this.currentTopNav = 'agent-test'; // 设置当前选中的顶部导航
-          this.showSidebar = false;
-        } // 测试页面通常不需要侧边栏，设置为 false
+        //   else if (newPath.startsWith('/main/agent-test')) {
+        //   this.currentTopNav = 'agent-test'; 
+        //   this.showSidebar = false;
+        // } 
         else {
           this.currentTopNav = '';
           this.showSidebar = true;
@@ -196,9 +221,9 @@ export default {
       } else if (navKey === 'knowledge-base') {
         this.$router.push('/main/knowledge-base');
       }
-      else if (navKey === 'agent-test') {
-        this.$router.push('/main/agent-test/1'); // 默认跳转到 agentId 为 1 的测试页
-      }
+      // else if (navKey === 'agent-test') {
+      //   this.$router.push('/main/agent-test/1'); // 默认跳转到 agentId 为 1 的测试页
+      // }
     },
     handleSidebarClick(sidebarKey, routePath) {
       this.currentInsightSidebarNav = sidebarKey;
