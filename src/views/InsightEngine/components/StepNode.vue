@@ -11,7 +11,6 @@
       <label>Prompt:</label>
       <textarea
         v-model="internalPrompt"
-        @input="emitUpdateData('prompt', internalPrompt)"
         placeholder="输入Prompt..."
         rows="3"
       ></textarea>
@@ -27,7 +26,7 @@
         </div>
         <div v-else-if="safeNodeData.output?.text || (safeNodeData.output?.images && safeNodeData.output.images.length > 0)" class="generated-content-display">
           <div v-if="safeNodeData.output?.text" class="text-output-display">
-            <p class="generated-text-content">{{ safeNodeData.output.text }}</p>
+            <div class="generated-text-content" v-html="renderedMarkdown"></div>
             <button class="copy-button" @click="copyTextOutput">复制</button>
           </div>
 
@@ -54,6 +53,7 @@
 <script setup>
 import { defineProps, defineEmits, ref, watch, inject, computed } from 'vue';
 import { Handle, Position } from '@vue-flow/core';
+import { marked } from 'marked';
 
 const props = defineProps({
   node: Object, // 确保 node prop 存在
@@ -85,9 +85,12 @@ const internalPrompt = ref(safeNodeData.value.prompt);
 
 // 监听 safeNodeData.prompt 的变化，更新 local ref
 // 确保 watch 监听的是一个稳定的、可访问的属性
-watch(() => safeNodeData.value.prompt, (newVal) => {
-  internalPrompt.value = newVal;
-}, { immediate: true }); // 立即执行一次，确保初始化
+watch(internalPrompt, (newValue) => {
+  // 添加一个安全检查，确保 props.node 存在后再执行
+  if (props.node) {
+    emit('update-data', { nodeId: props.node.id, key: 'prompt', value: newValue });
+  }
+});
 
 // 注入父组件的 activeNodeId
 const activeNodeId = inject('activeNodeId', null); // 确保在模板中使用了 activeNodeId
@@ -100,6 +103,13 @@ const displayStatus = computed(() => {
     case 'error': return '失败';
     default: return '未知'; // 添加默认状态
   }
+});
+
+const renderedMarkdown = computed(() => {
+  if (safeNodeData.value.output?.text) {
+    return marked.parse(safeNodeData.value.output.text);
+  }
+  return '';
 });
 
 const emitUpdateData = (key, value) => {
