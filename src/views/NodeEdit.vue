@@ -36,7 +36,7 @@
                 <p>正在生成结果，请稍候...</p>
                 <div class="spinner"></div>
               </div>
-              <pre v-else-if="node.result">{{ node.result }}</pre>
+              <div v-else-if="node.result" class="output-content" v-html="marked(node.result)"></div>
               <p v-else class="no-result">点击"运行"按钮获取AI结果</p>
             </div>
 
@@ -111,6 +111,7 @@
 <script setup>
 import { ref, onMounted, nextTick, computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { marked } from 'marked'; 
 
 const route = useRoute();
 const agentId = ref(route.params.agentId || 'default-agent');
@@ -521,6 +522,8 @@ h2 {
   cursor: not-allowed;
 }
 
+/* 移除或注释掉原有的 .node-result pre 样式 */
+
 .node-result {
   margin-top: 20px;
   padding-top: 20px;
@@ -534,7 +537,7 @@ h2 {
   color: #444;
 }
 
-.node-result pre {
+/* .node-result pre {
   background: #f7f7f7;
   padding: 12px;
   border-radius: 6px;
@@ -543,13 +546,57 @@ h2 {
   max-height: 200px;
   overflow-y: auto;
   font-family: monospace;
-}
+} */
 
 .no-result {
   color: #999;
   /* font-style: italic; */
   text-align: center;
   margin-top: 20px;
+}
+
+.output-content {
+  background: #f7f7f7;
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  min-height: 100px;
+  /* 确保 Markdown 样式被正确应用 */
+  line-height: 1.6;
+  text-align: left;
+}
+
+/* 覆盖 v-html 内部可能生成的元素的默认样式 */
+.output-content :deep(h1),
+.output-content :deep(h2),
+.output-content :deep(h3) {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+}
+.output-content :deep(p) {
+  margin-bottom: 1em;
+}
+.output-content :deep(ul),
+.output-content :deep(ol) {
+  padding-left: 2em;
+}
+.output-content :deep(code) {
+  background-color: #e0e0e0;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+}
+.output-content :deep(pre) {
+  background-color: #2d2d2d;
+  color: #f8f8f2;
+  padding: 1em;
+  border-radius: 5px;
+  overflow-x: auto;
+}
+.output-content :deep(pre) code {
+    background-color: transparent;
+    padding: 0;
 }
 
 .loading-indicator {
@@ -768,4 +815,5 @@ h2 {
     align-items: flex-start; /* 顶部对齐 */
   }
 }
+
 </style>
