@@ -149,14 +149,6 @@ const nodes = ref([
     result: '',
     completed: false,
     loading: false
-  },
-  {
-    title: '素材文档生成',
-    prompt: '',
-    placeholder: '一键打包生成含多尺寸图片+短视频+文案的标准化传播素材库...',
-    result: '',
-    completed: false,
-    loading: false
   }
 ]);
 
@@ -265,7 +257,7 @@ const callAgentApi = async (nodeIndex) => {
     
     const data = await response.json();
     // 假设API返回图片URL
-    node.result = data.imageUrl || 'https://via.placeholder.com/400x300?text=AI+Generated+Image';
+    node.result = data.imageUrl || 'https://via.placeholder.com/1024x1024?text=AI+Generated+Image';
     node.completed = true;
     return true;
   } catch (error) {

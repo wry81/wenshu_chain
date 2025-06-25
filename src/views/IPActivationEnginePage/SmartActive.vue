@@ -24,11 +24,11 @@
     </div>
 
     <div class="agent-grid">
-      <div class="agent-card" @click="selectAgent(3)">
+      <div class="agent-card" @click="selectAgent(6)">
         <img src="../../assets/bg2.png" alt="智能体图片" class="agent-card-image" />
-        <h3 class="agent-name">IP形象转3D模型</h3>
+        <h3 class="agent-name">文旅IP多模态创作</h3>
         <p class="agent-description">
-          一键将平面IP形象转化为高质量3D模型, 保留角色精髓的同时赋予立体生命力, 让您的IP从纸面跃入数字世界。
+          融合图文问答、视觉原型、动态表情包及场景化延展的 IP 创作流程。
         </p>
       </div>
 
