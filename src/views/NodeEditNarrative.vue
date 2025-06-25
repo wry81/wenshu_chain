@@ -1016,10 +1016,10 @@ const callAgentApi = async (nodeIndex) => {
     node.completed = true;
 
     // 将上一步的结果（可能是Data URL）填充到下一个节点的prompt
-    if (nodeIndex + 1 < nodes.value.length) {
+    //if (nodeIndex + 1 < nodes.value.length) {
       // 为避免下一个节点输入过长，这里可以只传递提示信息
-      nodes.value[nodeIndex + 1].prompt = `[上一步生成了一张图片，请根据这张图片继续操作]`;
-    }
+      //nodes.value[nodeIndex + 1].prompt = `[上一步生成了一张图片，请根据这张图片继续操作]`;
+    //}
 
   } catch (error) {
     node.result = `[前端错误] ${error.message}`;

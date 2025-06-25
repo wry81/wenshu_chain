@@ -17,7 +17,6 @@
           <div class="node-title">{{ node.title }}</div>  <!-- 直接显示预设的标题 -->
           
           <template v-if="focusedNodeIndex === index">
-            <!-- 完整内容（聚焦状态） -->
             <div class="input-section">
               <label>输入 Prompt:</label>
               <textarea
@@ -96,14 +95,11 @@
         ></div>
       </div>
       
-      <button class="redoall-btn" @click="redoAllNodes">
-        <span>全部重做</span>
-      </button>
-      
       <button class="run-btn" @click="runAllNodes">
         <span v-if="isRunning">运行中...</span>
         <span v-else>运行</span>
       </button>
+
       <button class="run-btn" @click="runCurrentNode">
         <span v-if="nodes[focusedNodeIndex].loading">运行中...</span>
         <span v-else>运行当前节点</span>
@@ -126,10 +122,10 @@ let scrollTimeout = null;
 
 const nodes = ref([
   {
-    nodeId: 'step1_topic',
-    title: '主题选择',
+    nodeId: 'step1_analyze_market',
+    title: '分析市场数据',
     prompt: '',
-    placeholder: '请输入相关主题...',
+    placeholder: '请根据以下市场信息，分析其主要趋势、机遇和挑战：',
     result: '',
     completed: false,
     loading: false
@@ -445,29 +441,29 @@ h2 {
 }
 
 .node-card {
+  position: relative; /* 添加这行 */
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   padding: 25px;
   flex-shrink: 0;
   flex: 0 0 auto;
-  transform-origin: center left; /* 从顶部中心缩放 */
-  margin-top: 20px; /* 为放大留出空间 */
-  margin-bottom: 20px; /* 保持底部间距 */
-  transition: transform 1s ease, box-shadow 1s ease; /* 平滑过渡 */
+  transform-origin: center left;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  transition: transform 1s ease, box-shadow 1s ease;
   scroll-snap-align: center;
   position: relative;
 }
 
 .focused-node {
-  /* transform: scale(1.02) translateY(-10px); 上移10px避免遮挡 */
-  /* box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); 调整阴影 */
   transform: scale(1);
   border: var(--theme-color-40) solid 3px;
-  width: 400px;
-  min-height: 600px;
+  width: 600px;
+  height: 800px; /* 固定高度 */
+  max-height: 800px; /* 确保不超过600px */
+  position: relative;
 }
-
 /* 折叠卡片样式 */
 .collapsed-node {
   width: 200px !important;
@@ -511,6 +507,7 @@ h2 {
 .input-section {
   margin: 20px 0;
   margin-right: 20px;
+  height: auto;
 }
 
 .input-section label {
@@ -526,7 +523,7 @@ h2 {
   border: 1px solid #ddd;
   border-radius: 8px;
   background-color: #F6F5F5;
-  min-height: 120px;
+  min-height: 200px;
   resize: vertical;
   font-family: inherit;
 }
@@ -547,9 +544,12 @@ h2 {
 .node-result {
   margin-top: 20px;
   padding-top: 20px;
+  padding-bottom: 80px;
   border-top: 1px solid #eee;
-  min-height: 200px;
+  overflow-y: auto; /* 允许内容滚动 */
+  max-height: calc(100% - 500px); /* 根据父容器高度计算 */
 }
+
 
 .node-result h4 {
   font-size: 16px;
@@ -576,14 +576,17 @@ h2 {
 }
 
 .output-content {
-  background: #f7f7f7;
+  /* background: #f7f7f7; */
   padding: 15px;
-  border: 1px solid #e0e0e0;
+  border: none;
   border-radius: 4px;
-  min-height: 100px;
-  /* 确保 Markdown 样式被正确应用 */
+  /* min-height: 100px; */
   line-height: 1.6;
   text-align: left;
+  white-space: pre-wrap; /* 保证文本能正常换行 */
+  word-wrap: break-word;
+  overflow-y: auto; /* 允许内容滚动 */
+  max-height: 50%; /* 根据父容器高度计算 */
 }
 
 /* 覆盖 v-html 内部可能生成的元素的默认样式 */
@@ -651,7 +654,7 @@ h2 {
   position: absolute;
   bottom: 20px;
   right: 20px;
-  left: 20px;
+  z-index: 1; /* 确保在内容之上 */
 }
 
 .redo-btn{
@@ -721,11 +724,11 @@ h2 {
   box-shadow: var(--box-shadow-soft);
   display: flex;
   align-items: center;
-  justify-content: center; /* 新增：使内容整体居中 */
+  justify-content: center;
   padding: 0 30px;
   gap: 20px;
   flex-shrink: 0;
-  margin: 20px auto 0; /* 修改这里 - 上下20px，左右auto */
+  margin: 20px auto 0;
 }
 
 .progress-indicator {

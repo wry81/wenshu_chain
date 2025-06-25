@@ -36,10 +36,10 @@
                 <div class="spinner"></div>
               </div>
               <template v-else-if="node.result">
-                <div v-if="isImageUrl(node.result)" class="result-image-container">
+                 <div v-if="isImageUrl(node.result)" class="result-image-container">
                   <img :src="node.result" alt="AI生成结果" class="result-image">
                 </div>
-                <div v-else class="output-content">{{ node.result }}</div>
+                 <div v-else class="output-content" v-html="marked(node.result)"></div>
               </template>
               <p v-else class="no-result">点击"运行"按钮获取AI结果</p>
             </div>
@@ -97,14 +97,11 @@
         ></div>
       </div>
       
-      <button class="redoall-btn" @click="redoAllNodes">
-        <span>全部重做</span>
-      </button>
-      
       <button class="run-btn" @click="runAllNodes">
         <span v-if="isRunning">运行中...</span>
         <span v-else>运行</span>
       </button>
+
       <button class="run-btn" @click="runCurrentNode">
         <span v-if="nodes[focusedNodeIndex].loading">运行中...</span>
         <span v-else>运行当前节点</span>
@@ -116,6 +113,7 @@
 <script setup>
 import { ref, onMounted, nextTick, computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { marked } from 'marked'; // 1. 引入 marked 库
 
 const route = useRoute();
 const agentId = ref(route.params.agentId || 'default-agent');
@@ -163,6 +161,7 @@ const nodes = ref([
   }
 ]);
 
+
 const focusedNodeIndex = ref(0);
 const isRunning = ref(false);
 
@@ -171,6 +170,44 @@ const trackStyle = computed(() => {
     width: `${nodes.value.length * 420}px`
   };
 });
+
+
+// 3. 添加一个辅助函数来判断结果是否为图片URL
+const isImageUrl = (text) => {
+  // 这是一个简单的判断，可以根据实际返回的URL格式进行调整
+  return typeof text === 'string' && (text.startsWith('http') || text.startsWith('data:image'));
+};
+
+// 将后端返回的数据统一解析为可用的字符串（DataURL / URL / Markdown）
+const normalizeApiResult = (apiData) => {
+  if (!apiData) return '';
+
+  // 1) 兼容常见字段名：result 或 data
+  let raw = apiData.result ?? apiData.data ?? '';
+
+  // 2) 若为数组则取第一项
+  if (Array.isArray(raw)) {
+    raw = raw[0] ?? '';
+  }
+
+  // 3) 确保最终是字符串
+  if (typeof raw !== 'string') {
+    raw = String(raw);
+  }
+
+// 4) 已是 URL 或 Data-URL，直接返回
+  if (raw.startsWith('http') || raw.startsWith('data:image')) {
+    return raw;
+  }
+
+// 5) 裸 Base64（JPEG 通常以 /9j/ 开头）→ 转为 Data-URL
+  if (/^\/9j/.test(raw) || /^[A-Za-z0-9+/]+=*$/.test(raw)) {
+    return `data:image/jpeg;base64,${raw}`;
+  }
+
+  // 6) 其它情况视为普通文本 / Markdown
+  return raw;
+};
 
 const scrollToNode = (index) => {
   nextTick(() => {
@@ -189,30 +226,6 @@ const scrollToNode = (index) => {
       behavior: 'smooth'
     });
   });
-};
-
-// 判断文本是否为图片 URL
-const isImageUrl = (text) => {
-  return typeof text === 'string' && (text.startsWith('http') || text.startsWith('data:image'));
-};
-
-// 将后端返回的数据转换为可用的字符串
-const normalizeApiResult = (apiData) => {
-  if (!apiData) return '';
-  let raw = apiData.result ?? apiData.data ?? '';
-  if (Array.isArray(raw)) {
-    raw = raw[0] ?? '';
-  }
-  if (typeof raw !== 'string') {
-    raw = String(raw);
-  }
-  if (raw.startsWith('http') || raw.startsWith('data:image')) {
-    return raw;
-  }
-  if (/^\/9j/.test(raw) || /^[A-Za-z0-9+/]+=*$/.test(raw)) {
-    return `data:image/jpeg;base64,${raw}`;
-  }
-  return raw;
 };
 
 const focusNode = async (index) => {
@@ -253,7 +266,9 @@ const redoAllNodes = () => {
 const downloadResult = (index) => {
   const result = nodes.value[index].result;
   if (!result) return;
+  
   if (isImageUrl(result)) {
+    // 下载图片
     const link = document.createElement('a');
     link.href = result;
     link.download = `节点${index + 1}_结果.png`;
@@ -261,6 +276,7 @@ const downloadResult = (index) => {
     link.click();
     document.body.removeChild(link);
   } else {
+    // 下载文本
     const blob = new Blob([result], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -278,11 +294,13 @@ const callAgentApi = async (nodeIndex) => {
   const token = localStorage.getItem('token');
   
   if (!token) {
-    throw new Error('请先登录');
+    alert('请先登录');
+    return;
   }
   
   if (!node.prompt.trim()) {
-    throw new Error('请输入 Prompt 内容！');
+    alert('请输入 Prompt 内容！');
+    return;
   }
 
   try {
@@ -293,9 +311,9 @@ const callAgentApi = async (nodeIndex) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({
+      body: JSON.stringify({ 
         input: node.prompt,
-        nodeId: node.nodeId
+        nodeId: node.nodeId 
       }),
     });
 
@@ -305,29 +323,27 @@ const callAgentApi = async (nodeIndex) => {
     }
     
     const data = await response.json();
+
+    // === 关键修改：处理并格式化Base64图片数据 ===
     const resultToShow = normalizeApiResult(data);
-    node.result = resultToShow || 'https://via.placeholder.com/1024x1024?text=AI+Generated+Image';
+    node.result = resultToShow;
+    // === 修改结束 ===
+    
     node.completed = true;
-    return true;
+
+    // 将上一步的结果（可能是Data URL）填充到下一个节点的prompt
+    //if (nodeIndex + 1 < nodes.value.length) {
+      // 为避免下一个节点输入过长，这里可以只传递提示信息
+      //nodes.value[nodeIndex + 1].prompt = `[上一步生成了一张图片，请根据这张图片继续操作]`;
+    //}
+
   } catch (error) {
-    node.result = `错误: ${error.message}`;
-    throw error;
+    node.result = `[前端错误] ${error.message}`;
   } finally {
     node.loading = false;
   }
 };
 
-const runSingleNode = async (index) => {
-  try {
-    await callAgentApi(index);
-    return true;
-  } catch (error) {
-    console.error('节点处理失败:', error);
-    return false;
-  }
-};
-
-// 仅运行当前聚焦的节点
 const runCurrentNode = () => {
   const currentIndex = focusedNodeIndex.value;
   if (nodes.value[currentIndex]) {
@@ -335,19 +351,33 @@ const runCurrentNode = () => {
   }
 };
 
-const runAllNodes = async () => {
-  isRunning.value = true;
+// const runSingleNode = async (index) => {
+//   try {
+//     await callAgentApi(index);
+//     return true;
+//   } catch (error) {
+//     console.error('节点处理失败:', error);
+//     return false;
+//   }
+// };
+
+// const runAllNodes = async () => {
+//   isRunning.value = true;
   
-  for (let i = 0; i < nodes.value.length; i++) {
-    if (!nodes.value[i].completed) {
-      await focusNode(i);
-      const success = await runSingleNode(i);
-      if (!success) break;
-    }
-  }
+//   // 7. 优化“全部运行”逻辑，确保上一步结果能正确传递
+//   for (let i = 0; i < nodes.value.length; i++) {
+//     if (!nodes.value[i].completed) {
+//       await focusNode(i);
+//       const success = await runSingleNode(i);
+//       if (!success) {
+//         // 如果中途有节点失败，则停止执行
+//         break;
+//       }
+//     }
+//   }
   
-  isRunning.value = false;
-};
+//   isRunning.value = false;
+// };
 
 const exitEditor = () => {
   console.log('退出编辑器');
@@ -429,6 +459,7 @@ onMounted(() => {
 }
 
 .node-card {
+  position: relative; /* 添加这行 */
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -446,8 +477,10 @@ onMounted(() => {
 .focused-node {
   transform: scale(1);
   border: var(--theme-color-40) solid 3px;
-  width: 400px;
-  min-height: 600px;
+  width: 600px;
+  height: 800px; /* 固定高度 */
+  max-height: 800px; /* 确保不超过600px */
+  position: relative;
 }
 
 .collapsed-node {
@@ -478,6 +511,7 @@ onMounted(() => {
 .input-section {
   margin: 20px 0;
   margin-right: 20px;
+  height: auto;
 }
 
 .input-section label {
@@ -493,7 +527,7 @@ onMounted(() => {
   border: 1px solid #ddd;
   border-radius: 8px;
   background-color: #F6F5F5;
-  min-height: 120px;
+  min-height: 200px;
   resize: vertical;
   font-family: inherit;
 }
@@ -512,8 +546,10 @@ onMounted(() => {
 .node-result {
   margin-top: 20px;
   padding-top: 20px;
+  padding-bottom: 80px;
   border-top: 1px solid #eee;
-  min-height: 200px;
+  overflow-y: auto; /* 允许内容滚动 */
+  max-height: calc(100% - 500px); /* 根据父容器高度计算 */
 }
 
 .node-result h4 {
@@ -530,7 +566,7 @@ onMounted(() => {
   align-items: center;
   overflow: hidden;
   border-radius: 6px;
-  background: #f7f7f7;
+  background: transparent;
 }
 
 .result-image {
@@ -539,21 +575,58 @@ onMounted(() => {
   object-fit: contain;
 }
 
+/* 8. 为渲染文本结果添加样式 */
+.output-content {
+  /* background: #f7f7f7; */
+  padding: 15px;
+  border: none;
+  border-radius: 4px;
+  /* min-height: 100px; */
+  line-height: 1.6;
+  text-align: left;
+  white-space: pre-wrap; /* 保证文本能正常换行 */
+  word-wrap: break-word;
+  overflow-y: auto; /* 允许内容滚动 */
+  max-height: 50%; /* 根据父容器高度计算 */
+}
+
+.output-content :deep(h1),
+.output-content :deep(h2),
+.output-content :deep(h3) {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+}
+.output-content :deep(p) {
+  margin-bottom: 1em;
+}
+.output-content :deep(ul),
+.output-content :deep(ol) {
+  padding-left: 2em;
+}
+.output-content :deep(code) {
+  /* background-color: #e0e0e0; */
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+}
+.output-content :deep(pre) {
+  background-color: #2d2d2d;
+  color: #f8f8f2;
+  padding: 1em;
+  border-radius: 5px;
+  overflow-x: auto;
+}
+.output-content :deep(pre) code {
+    background-color: transparent;
+    padding: 0;
+}
+
+
 .no-result {
   color: #999;
   text-align: center;
   margin-top: 20px;
-}
-
-.output-content {
-  background: #f7f7f7;
-  padding: 15px;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  min-height: 100px;
-  line-height: 1.6;
-  text-align: left;
-  word-wrap: break-word;
 }
 
 .loading-indicator {
@@ -588,7 +661,7 @@ onMounted(() => {
   position: absolute;
   bottom: 20px;
   right: 20px;
-  left: 20px;
+  z-index: 1; /* 确保在内容之上 */
 }
 
 .redo-btn{
