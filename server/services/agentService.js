@@ -2,12 +2,13 @@ const pool = require('../config/db');
 const { callLLM } = require('./llmService');
 
 /**
- * 执行一个智能体的工作流
+ * 执行一个智能体的工作流或单个节点
  * @param {number} agentId - 智能体ID
- * @param {string} initialInput - 初始输入
- * @returns {Promise<any>} - 最终输出
+ * @param {string} input - 输入数据
+ * @param {string} [nodeId] - (可选) 要执行的特定节点ID
+ * @returns {Promise<any>} - 节点或工作流的最终输出
  */
-async function runAgent(agentId, initialInput) {
+async function runAgent(agentId, input, nodeId) {
   const [rows] = await pool.query(
     'SELECT workflow FROM wensoul_agent WHERE id = ? AND status = 1',
     [agentId]
@@ -21,105 +22,96 @@ async function runAgent(agentId, initialInput) {
     throw new Error('Invalid or empty workflow');
   }
 
-  let context = initialInput;
+  // 如果提供了nodeId，则只执行该节点
+  if (nodeId) {
+    const node = workflow.find(n => n.nodeId === nodeId);
+    if (!node) {
+      throw new Error(`在Agent工作流中未找到ID为 ${nodeId} 的节点。`);
+    }
+    // 使用提供的输入直接执行单个节点
+    return executeNode(node, input);
+  }
 
+  // --- 保留原始的完整工作流执行逻辑 ---
+  let context = input;
   for (const node of workflow) {
-    const { nodeType, model, promptTemplate } = node;
-    const currentInput = typeof context === 'string' ? context : JSON.stringify(context);
-    const prompt = promptTemplate.replace('{{input}}', currentInput);
+    // 将上一步的输出作为当前步骤的输入
+    context = await executeNode(node, context);
+  }
 
-    let apiUrl;
-    let payload;
-    // 根据节点类型选择对应的API URL 并构建相应的payload
-    switch (nodeType) {
-      case 'text-to-text':
-        apiUrl = process.env.T2T_API_URL;
-        payload = {
-          model: model || process.env.LLM_MODEL,
-          messages: [{ role: 'user', content: prompt }]
-        };
-        break;
-      case 'text-to-image':
-        apiUrl = process.env.T2I_API_URL;
+  return context;
+}
 
-        // 1. 创建一个 FormData 实例
-        const formData = new FormData();
+/**
+ * [最终版-简洁错误提示] 用于执行单个工作流节点的辅助函数
+ * @param {object} node - 工作流节点对象
+ * @param {any} input - 此节点的输入
+ * @returns {Promise<string>} - 节点的输出（确保始终为字符串）
+ */
+async function executeNode(node, input) {
+  const { nodeId, nodeName, nodeType, model, promptTemplate } = node;
+  const currentInput = typeof input === 'string' ? input : JSON.stringify(input);
+  const prompt = promptTemplate ? promptTemplate.replace('{{input}}', currentInput) : currentInput;
 
-        // 2. 将高级参数构建为一个对象
-        const advancedOptions = {
+  let apiUrl;
+  let payload;
+
+  switch (nodeType) {
+    case 'text-to-text':
+      apiUrl = process.env.T2T_API_URL;
+      payload = {
+        model: model || process.env.LLM_MODEL,
+        messages: [{ role: 'user', content: prompt }]
+      };
+      break;
+    case 'text-to-image':
+      apiUrl = process.env.T2I_API_URL;
+      payload = {
+        prompt: prompt,
+        advanced_opt: {
           "height": 1024,
           "width": 1024,
           "num_images_per_prompt": 1
-        };
-
-        // 3. 按照 --form 的要求，分别追加 prompt 和 advanced_opt 字段
-        formData.append('prompt', prompt);
-        formData.append('advanced_opt', JSON.stringify(advancedOptions));
-
-        // 4. 将 payload 设置为这个 FormData 实例
-        payload = formData;
-        
-        break;
-      case 'image-to-image':
-        apiUrl = process.env.I2I_API_URL;
-        payload = {
-          prompt,
-          model: model || process.env.LLM_MODEL,
-          image: currentInput
-        };
-        break;
-      case 'image-to-model':
-        apiUrl = process.env.I2M_API_URL;
-        payload = {
-          image: currentInput,
-          model: model || process.env.LLM_MODEL
-        };
-        break;
-      default:
-        console.warn(`Unsupported nodeType: ${nodeType}`);
-        context = `Unsupported node type ${nodeType}. Previous step output: ${context}`;
-        continue; // 跳过当前循环
-    }
-
-    const result = await callLLM({
-      apiUrl,
-      payload
-    });
-
-    // 这里需要根据不同API的返回结构来解析输出
-    if (nodeType === 'text-to-text') {
-      if (result.choices && result.choices.length > 0) {
-        context = result.choices[0].message.content;
-      } else {
-        throw new Error('LLM call returned no text choices.');
-      }
-    } else if (nodeType === 'text-to-image') {
-      // --- 修改开始 ---
-      // 检查 API 是否成功接收了任务
-      if (result && result.code === '0' && result.lid) {
-        // 直接返回任务 ID (lid)，而不是尝试寻找不存在的图片 URL
-        context = `任务已提交，处理ID为: ${result.lid}`; 
-      } else {
-        // 如果没有成功接收，则抛出更详细的错误
-        throw new Error(`Text-to-image task submission failed. API response: ${JSON.stringify(result)}`);
-      }
-      // --- 修改结束 ---
-    } else if (nodeType === 'image-to-image') { 
-        // ... image-to-image 的逻辑也可能需要类似修改 ...
-        if (result.data && result.data.length > 0) {
-            context = result.data[0].url; 
-        } else {
-            throw new Error('LLM call returned no image data.');
         }
-    } else if (nodeType === 'image-to-model') {
-      context = result;
-    } else {
-      context = result;
-    }
+      };
+      break;
+    default:
+      console.warn(`[agentService] 不支持的节点类型: ${nodeType}`);
+      return `[后端错误] 前端请求了一个不支持的节点类型: ${nodeType}。`;
   }
 
-  return context; // 返回最后一个节点的输出
+  try {
+    const result = await callLLM({ apiUrl, payload, nodeType });
+
+    // 检查并格式化成功返回
+    if (nodeType === 'text-to-text') {
+      if (result && result.choices?.[0]?.message?.content) {
+        return result.choices[0].message.content;
+      }
+    } 
+    else if (nodeType === 'text-to-image') {
+      // 直接返回生成的Base64图片列表中的第一张
+      if (result && (result.code === 0 || result.code === '0') 
+          && Array.isArray(result.result) 
+          && result.result.length > 0) {
+        return result.result[0];
+      }
+    }
+    
+    // 如果执行到这里，说明API响应了，但业务逻辑上失败了
+    const errorMessage = result.message || '未知业务错误';
+    console.error(`[agentService] 节点'${nodeName}'业务逻辑失败: ${errorMessage}`, result);
+    // === 修改点：返回简洁的错误原因 ===
+    return `[后端错误] 节点'${nodeName}'执行失败。原因: ${errorMessage} (详情请查看服务器日志)`;
+
+  } catch (error) {
+    // 如果axios请求直接失败
+    console.error(`[agentService] 节点'${nodeName}'的API调用失败:`, error.message);
+    // === 修改点：返回简洁的错误原因 ===
+    return `[后端错误] 节点'${nodeName}'的API调用失败。原因: 无法连接到模型服务，请检查网络或联系管理员。`;
+  }
 }
+
 
 module.exports = {
   runAgent,

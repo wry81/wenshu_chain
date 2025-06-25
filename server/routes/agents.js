@@ -20,27 +20,48 @@ router.get('/', async (req, res) => {
 
 
 // run agent workflow
+// router.post('/:id/run', auth, async (req, res) => {
+//   const { input } = req.body;
+//   const agentId = req.params.id;
+//   const userId = req.user.id;
+  
+//   try {
+//     // **核心改变：调用统一的权限检查函数**
+//     const hasAccess = await subscriptionService.checkAgentAccess(userId, agentId);
+
+//     if (!hasAccess) {
+//       return res.status(403).json({ message: 'Access denied. You do not have an active subscription or have not purchased this agent.' });
+//     }
+
+//     const result = await agentService.runAgent(agentId, input);
+//     res.json({ result });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: err.message });
+//   }
+// });
+
 router.post('/:id/run', auth, async (req, res) => {
-  const { input } = req.body;
+  // 从请求体中解构出 nodeId
+  const { input, nodeId } = req.body; 
   const agentId = req.params.id;
   const userId = req.user.id;
   
   try {
-    // **核心改变：调用统一的权限检查函数**
     const hasAccess = await subscriptionService.checkAgentAccess(userId, agentId);
 
     if (!hasAccess) {
       return res.status(403).json({ message: 'Access denied. You do not have an active subscription or have not purchased this agent.' });
     }
 
-    const result = await agentService.runAgent(agentId, input);
+    // 将 input 和 nodeId 都传递给服务
+    const result = await agentService.runAgent(agentId, input, nodeId);
     res.json({ result });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: err.message });
   }
 });
-
 
 module.exports = router;
 
