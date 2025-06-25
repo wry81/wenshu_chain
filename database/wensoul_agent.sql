@@ -58,6 +58,45 @@ INSERT INTO `wensoul_agent` (`agent_name`, `agent_description`, `workflow`) VALU
     "model": "internal-3d-generator-v2",
     "promptTemplate": ""
   },
-  
-]');
+]'),
+(
+  '叙事引擎',
+  '基于文化元素分析的文旅 IP 全流程叙事生成',
+  '[
+    {
+      \"nodeId\": \"step1_culture_analysis\",
+      \"nodeName\": \"文化元素分析\",
+      \"nodeType\": \"text-to-text\",
+      \"model\": \"deepseek-v3\",
+      \"promptTemplate\": \"请对以下文化元素进行详细分析：\\n\\n{{input}}\"
+    },
+    {
+      \"nodeId\": \"step2_ip_generation\",
+      \"nodeName\": \"文旅IP生成\",
+      \"nodeType\": \"text-to-text\",
+      \"model\": \"deepseek-v3\",
+      \"promptTemplate\": \"依据分析结果，为文旅项目生成一个具有吸引力的 IP 概念，包括核心故事与特色亮点：\\n\\n{{input}}\"
+    },
+    {
+      \"nodeId\": \"step3_ip_setting\",
+      \"nodeName\": \"IP设定构建\",
+      \"nodeType\": \"text-to-text\",
+      \"model\": \"deepseek-v3\",
+      \"promptTemplate\": \"根据以下 IP 概念，为其构建完整设定（世界观、角色、历史、象征意义等）：\\n\\n{{input}}\"
+    },
+    {
+      \"nodeId\": \"step4_ip_image_iter\",
+      \"nodeName\": \"IP形象迭代\",
+      \"nodeType\": \"text-to-image\",
+      \"model\": \"unicom_t2i\",
+      \"promptTemplate\": \"A refined concept art of a cultural-tourism IP character based on the following description: {{input}}\"
+    },
+    {
+      \"nodeId\": \"step5_doc_generation\",
+      \"nodeName\": \"文档生成\",
+      \"nodeType\": \"text-to-text\",
+      \"model\": \"deepseek-v3\",
+      \"promptTemplate\": \"综合以上内容，为该 IP 生成完整策划说明文档（含背景故事、形象说明、应用场景等）：\\n\\n{{input}}\"
+    }
+  ]');
 SET FOREIGN_KEY_CHECKS = 1;
