@@ -104,6 +104,10 @@
         <span v-if="isRunning">运行中...</span>
         <span v-else>运行</span>
       </button>
+      <button class="run-btn" @click="runCurrentNode">
+        <span v-if="nodes[focusedNodeIndex].loading">运行中...</span>
+        <span v-else>运行当前节点</span>
+      </button>
     </div>
   </div>
 </template>
@@ -122,7 +126,8 @@ let scrollTimeout = null;
 
 const nodes = ref([
   {
-    title: '主题选择',  // 预设标题1
+    nodeId: 'step1_topic',
+    title: '主题选择',
     prompt: '',
     placeholder: '请输入相关主题...',
     result: '',
@@ -130,7 +135,8 @@ const nodes = ref([
     loading: false
   },
   {
-    title: '社媒热点分析',  // 预设标题2
+    nodeId: 'step2_social_analysis',
+    title: '社媒热点分析',
     prompt: '',
     placeholder: '社交媒体热点词汇抓取与分析...',
     result: '',
@@ -138,7 +144,8 @@ const nodes = ref([
     loading: false
   },
   {
-    title: '竞品调研',  // 预设标题3
+    nodeId: 'step3_competitor_research',
+    title: '竞品调研',
     prompt: '',
     placeholder: '请输入竞品...',
     result: '',
@@ -146,7 +153,8 @@ const nodes = ref([
     loading: false
   },
   {
-    title: '现状挑战与机遇',  // 预设标题4
+    nodeId: 'step4_challenge_opportunity',
+    title: '现状挑战与机遇',
     prompt: '',
     placeholder: '请输入内容...',
     result: '',
@@ -154,7 +162,8 @@ const nodes = ref([
     loading: false
   },
   {
-    title: '文档生成',  // 预设标题5
+    nodeId: 'step5_doc_generation',
+    title: '文档生成',
     prompt: '',
     placeholder: '请输入总结内容...',
     result: '',
@@ -286,7 +295,10 @@ const callAgentApi = async (nodeIndex) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ input: node.prompt }),
+      body: JSON.stringify({
+        input: node.prompt,
+        nodeId: node.nodeId
+      }),
     });
 
     if (!response.ok) {
@@ -314,6 +326,14 @@ const runSingleNode = async (index) => {
   } catch (error) {
     console.error('节点处理失败:', error);
     return false;
+  }
+};
+
+// 仅运行当前聚焦的节点
+const runCurrentNode = () => {
+  const currentIndex = focusedNodeIndex.value;
+  if (nodes.value[currentIndex]) {
+    callAgentApi(currentIndex);
   }
 };
 
