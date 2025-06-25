@@ -126,10 +126,10 @@ let scrollTimeout = null;
 
 const nodes = ref([
   {
-    nodeId: 'step1_ip_breakdown',
+    nodeId: 'step1_decompose',
     title: 'IP元素解构',
     prompt: '',
-    placeholder: '深度分析现有IP的核心要素与市场定位, 提取DNA级特征标签...',
+    placeholder: '深度分析现有 IP 的核心要素与市场定位，提取 DNA 级特征标签：',
     result: '',
     completed: false,
     loading: false
@@ -138,25 +138,25 @@ const nodes = ref([
     nodeId: 'step2_visual_prototype',
     title: '视觉原型生成',
     prompt: '',
-    placeholder: '请输入想要生成的文旅IP视觉原型风格...',
+    placeholder: '请输入想要生成的文旅 IP 视觉原型风格：',
     result: '',
     completed: false,
     loading: false
   },
   {
-    nodeId: 'step3_dynamic_sticker',
+    nodeId: 'step3_dynamic_emojis',
     title: '动态表情包创作',
     prompt: '',
-    placeholder: '将静态形象转化为系列表情动画, 自动生成眨眼/口型等基础动作视频...',
+    placeholder: '将静态形象转化为系列表情动画，自动生成眨眼、口型等基础动作视频：',
     result: '',
     completed: false,
     loading: false
   },
   {
-    nodeId: 'step4_scene_extension',
+    nodeId: 'step4_scenario_extension',
     title: '场景化延展',
     prompt: '',
-    placeholder: '生成IP在不同场景的应用效果图: 周边产品/海报/社交媒体模板等...',
+    placeholder: '生成 IP 在不同场景的应用效果图：周边产品/海报/社交媒体模板等：',
     result: '',
     completed: false,
     loading: false

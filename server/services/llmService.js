@@ -1,39 +1,9 @@
 const axios = require('axios');
 const FormData = require('form-data');
-/**
- * Send a prompt to the configured LLM provider and return the response.
- * The API key and endpoint are read from environment variables.
- *
- * LLM_API_KEY   - key for authenticating with the provider
- * LLM_API_URL   - HTTP endpoint for chat completions
- */
-// async function callLLM({ payload, prompt, model, apiUrl, apiKey }) {
-//   const finalApiKey = apiKey || process.env.LLM_API_KEY;
-//   const finalUrl = apiUrl || process.env.LLM_API_URL;
-
-//   if (!finalApiKey) {
-//     throw new Error('LLM API key not configured');
-//   }
-
-//   // If a full payload is provided use it directly, otherwise build the
-//   // default chat-completion body from the prompt and model.
-//   // 需要更改model！
-//   const body = payload || {
-//     model: model || process.env.LLM_MODEL,
-//     messages: [{ role: 'user', content: prompt }]
-//   };
-
-//   const headers = {
-//     'Content-Type': 'application/json',
-//     Authorization: `Bearer ${finalApiKey}`
-//   };
-
-//   const { data } = await axios.post(finalUrl, body, { headers });
-//   return data;
-// }
-
 
 async function callLLM({ payload, prompt, model, apiUrl, apiKey, nodeType }) {
+  console.log(`[llmService] Node type: ${nodeType || 'default'}`);
+
   const finalApiKey = apiKey || process.env.LLM_API_KEY;
   const finalUrl = apiUrl || process.env.LLM_API_URL;
 
@@ -46,13 +16,16 @@ async function callLLM({ payload, prompt, model, apiUrl, apiKey, nodeType }) {
     Authorization: `Bearer ${finalApiKey}`
   };
 
-  if (nodeType === 'text-to-image') {
+  if (nodeType === 'text-to-image' || nodeType === 'image-to-image') {
+    // 生成图像或图转图：使用 FormData
     const formData = new FormData();
-    formData.append('prompt', payload.prompt);
-    formData.append('advanced_opt', JSON.stringify(payload.advanced_opt));
+    if (payload.prompt) formData.append('prompt', payload.prompt);
+    if (payload.advanced_opt) formData.append('advanced_opt', JSON.stringify(payload.advanced_opt));
+    if (payload.image) formData.append('image', payload.image);
     body = formData;
     Object.assign(headers, formData.getHeaders());
   } else {
+    // 其他模式（文本、视频、图文问答等）：JSON 传输
     headers['Content-Type'] = 'application/json';
     body = payload || {
       model: model || process.env.LLM_MODEL,

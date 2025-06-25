@@ -75,6 +75,39 @@ async function executeNode(node, input) {
         }
       };
       break;
+
+      case 'multi-to-text':
+        // 图文问答：必须传 messages 数组
+        apiUrl = process.env.I2T_API_URL;
+        payload = {
+          model: model || 'YuanjingVL',
+          messages: [
+            {
+              role: 'user',
+              content: prompt
+            }
+          ]
+          // 如果需要，可以在这里附加 max_tokens, temperature...
+        };
+      break;
+
+    case 'text-to-video':
+      // 文本生成视频：先提交生成任务
+      apiUrl = process.env.T2V_API_URL;
+      payload = {
+        prompt: prompt,
+        model: unicom_t2v
+      };
+      break;
+
+    case 'image-to-video':
+      // 图生视频：将图片转换为视频
+      apiUrl = process.env.I2V_API_URL;
+      payload = {
+        image: currentInput
+      };
+      break;
+
     default:
       console.warn(`[agentService] 不支持的节点类型: ${nodeType}`);
       return `[后端错误] 前端请求了一个不支持的节点类型: ${nodeType}。`;
@@ -95,6 +128,39 @@ async function executeNode(node, input) {
           && Array.isArray(result.result) 
           && result.result.length > 0) {
         return result.result[0];
+      }
+    }
+    else if (nodeType === 'multi-to-text') {
+      // 同步返回多模态文本结果列表（result.result包含文本字符串）
+      if (result && (result.code === 0 || result.code === '0')
+          && Array.isArray(result.result) && result.result.length > 0) {
+        return result.result[0];
+      }
+    }
+    else if (nodeType === 'text-to-video') {
+      // 异步流程：先返回 videoId，再去取最终视频链接
+      if (result && (result.code === 0 || result.code === '0') && result.videoId) {
+        const fetchResult = await callLLM({
+          apiUrl: process.env.T2V_GET_URL,
+          payload: { videoId: result.videoId },
+          nodeType: 'text-to-video'
+        });
+        if (fetchResult && (fetchResult.code === 0 || fetchResult.code === '0') && fetchResult.url) {
+          return fetchResult.url;
+        }
+      }
+    }
+    else if (nodeType === 'image-to-video') {
+      // 异步流程：先返回 videoId，再去取最终视频链接
+      if (result && (result.code === 0 || result.code === '0') && result.videoId) {
+        const fetchResult = await callLLM({
+          apiUrl: process.env.I2T_GET_URL,
+          payload: { videoId: result.videoId },
+          nodeType: 'image-to-video'
+        });
+        if (fetchResult && (fetchResult.code === 0 || fetchResult.code === '0') && fetchResult.url) {
+          return fetchResult.url;
+        }
       }
     }
     
