@@ -35,9 +35,12 @@
                 <p>正在生成结果，请稍候...</p>
                 <div class="spinner"></div>
               </div>
-              <div v-else-if="node.result" class="result-image-container">
-                <img :src="node.result" alt="AI生成结果" class="result-image">
-              </div>
+              <template v-else-if="node.result">
+                <div v-if="isImageUrl(node.result)" class="result-image-container">
+                  <img :src="node.result" alt="AI生成结果" class="result-image">
+                </div>
+                <div v-else class="output-content">{{ node.result }}</div>
+              </template>
               <p v-else class="no-result">点击"运行"按钮获取AI结果</p>
             </div>
 
@@ -102,6 +105,10 @@
         <span v-if="isRunning">运行中...</span>
         <span v-else>运行</span>
       </button>
+      <button class="run-btn" @click="runCurrentNode">
+        <span v-if="nodes[focusedNodeIndex].loading">运行中...</span>
+        <span v-else>运行当前节点</span>
+      </button>
     </div>
   </div>
 </template>
@@ -118,7 +125,8 @@ const scrollContainer = ref(null);
 let scrollTimeout = null;
 
 const nodes = ref([
-    {
+  {
+    nodeId: 'step1_ip_breakdown',
     title: 'IP元素解构',
     prompt: '',
     placeholder: '深度分析现有IP的核心要素与市场定位, 提取DNA级特征标签...',
@@ -127,6 +135,7 @@ const nodes = ref([
     loading: false
   },
   {
+    nodeId: 'step2_visual_prototype',
     title: '视觉原型生成',
     prompt: '',
     placeholder: '请输入想要生成的文旅IP视觉原型风格...',
@@ -135,6 +144,7 @@ const nodes = ref([
     loading: false
   },
   {
+    nodeId: 'step3_dynamic_sticker',
     title: '动态表情包创作',
     prompt: '',
     placeholder: '将静态形象转化为系列表情动画, 自动生成眨眼/口型等基础动作视频...',
@@ -143,6 +153,7 @@ const nodes = ref([
     loading: false
   },
   {
+    nodeId: 'step4_scene_extension',
     title: '场景化延展',
     prompt: '',
     placeholder: '生成IP在不同场景的应用效果图: 周边产品/海报/社交媒体模板等...',
@@ -178,6 +189,30 @@ const scrollToNode = (index) => {
       behavior: 'smooth'
     });
   });
+};
+
+// 判断文本是否为图片 URL
+const isImageUrl = (text) => {
+  return typeof text === 'string' && (text.startsWith('http') || text.startsWith('data:image'));
+};
+
+// 将后端返回的数据转换为可用的字符串
+const normalizeApiResult = (apiData) => {
+  if (!apiData) return '';
+  let raw = apiData.result ?? apiData.data ?? '';
+  if (Array.isArray(raw)) {
+    raw = raw[0] ?? '';
+  }
+  if (typeof raw !== 'string') {
+    raw = String(raw);
+  }
+  if (raw.startsWith('http') || raw.startsWith('data:image')) {
+    return raw;
+  }
+  if (/^\/9j/.test(raw) || /^[A-Za-z0-9+/]+=*$/.test(raw)) {
+    return `data:image/jpeg;base64,${raw}`;
+  }
+  return raw;
 };
 
 const focusNode = async (index) => {
@@ -218,13 +253,24 @@ const redoAllNodes = () => {
 const downloadResult = (index) => {
   const result = nodes.value[index].result;
   if (!result) return;
-  
-  const link = document.createElement('a');
-  link.href = result;
-  link.download = `节点${index + 1}_结果.png`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  if (isImageUrl(result)) {
+    const link = document.createElement('a');
+    link.href = result;
+    link.download = `节点${index + 1}_结果.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } else {
+    const blob = new Blob([result], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `节点${index + 1}_结果.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 };
 
 const callAgentApi = async (nodeIndex) => {
@@ -247,7 +293,10 @@ const callAgentApi = async (nodeIndex) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ input: node.prompt }),
+      body: JSON.stringify({
+        input: node.prompt,
+        nodeId: node.nodeId
+      }),
     });
 
     if (!response.ok) {
@@ -256,8 +305,8 @@ const callAgentApi = async (nodeIndex) => {
     }
     
     const data = await response.json();
-    // 假设API返回图片URL
-    node.result = data.imageUrl || 'https://via.placeholder.com/1024x1024?text=AI+Generated+Image';
+    const resultToShow = normalizeApiResult(data);
+    node.result = resultToShow || 'https://via.placeholder.com/1024x1024?text=AI+Generated+Image';
     node.completed = true;
     return true;
   } catch (error) {
@@ -275,6 +324,14 @@ const runSingleNode = async (index) => {
   } catch (error) {
     console.error('节点处理失败:', error);
     return false;
+  }
+};
+
+// 仅运行当前聚焦的节点
+const runCurrentNode = () => {
+  const currentIndex = focusedNodeIndex.value;
+  if (nodes.value[currentIndex]) {
+    callAgentApi(currentIndex);
   }
 };
 
@@ -486,6 +543,17 @@ onMounted(() => {
   color: #999;
   text-align: center;
   margin-top: 20px;
+}
+
+.output-content {
+  background: #f7f7f7;
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  min-height: 100px;
+  line-height: 1.6;
+  text-align: left;
+  word-wrap: break-word;
 }
 
 .loading-indicator {
