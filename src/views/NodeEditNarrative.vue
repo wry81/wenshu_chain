@@ -1143,6 +1143,7 @@ onMounted(() => {
 }
 
 .node-card {
+  position: relative; /* 添加这行 */
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -1160,8 +1161,10 @@ onMounted(() => {
 .focused-node {
   transform: scale(1);
   border: var(--theme-color-40) solid 3px;
-  width: 400px;
-  min-height: 600px;
+  width: 600px;
+  height: 800px; /* 固定高度 */
+  max-height: 800px; /* 确保不超过600px */
+  position: relative;
 }
 
 .collapsed-node {
@@ -1192,6 +1195,7 @@ onMounted(() => {
 .input-section {
   margin: 20px 0;
   margin-right: 20px;
+  height: auto;
 }
 
 .input-section label {
@@ -1207,7 +1211,7 @@ onMounted(() => {
   border: 1px solid #ddd;
   border-radius: 8px;
   background-color: #F6F5F5;
-  min-height: 120px;
+  min-height: 200px;
   resize: vertical;
   font-family: inherit;
 }
@@ -1226,8 +1230,10 @@ onMounted(() => {
 .node-result {
   margin-top: 20px;
   padding-top: 20px;
+  padding-bottom: 80px;
   border-top: 1px solid #eee;
-  min-height: 200px;
+  overflow-y: auto; /* 允许内容滚动 */
+  max-height: calc(100% - 500px); /* 根据父容器高度计算 */
 }
 
 .node-result h4 {
@@ -1244,7 +1250,7 @@ onMounted(() => {
   align-items: center;
   overflow: hidden;
   border-radius: 6px;
-  background: #f7f7f7;
+  background: transparent;
 }
 
 .result-image {
@@ -1255,15 +1261,17 @@ onMounted(() => {
 
 /* 8. 为渲染文本结果添加样式 */
 .output-content {
-  background: #f7f7f7;
+  /* background: #f7f7f7; */
   padding: 15px;
-  border: 1px solid #e0e0e0;
+  border: none;
   border-radius: 4px;
-  min-height: 100px;
+  /* min-height: 100px; */
   line-height: 1.6;
   text-align: left;
   white-space: pre-wrap; /* 保证文本能正常换行 */
   word-wrap: break-word;
+  overflow-y: auto; /* 允许内容滚动 */
+  max-height: 50%; /* 根据父容器高度计算 */
 }
 
 .output-content :deep(h1),
@@ -1281,7 +1289,7 @@ onMounted(() => {
   padding-left: 2em;
 }
 .output-content :deep(code) {
-  background-color: #e0e0e0;
+  /* background-color: #e0e0e0; */
   padding: 2px 4px;
   border-radius: 3px;
   font-family: monospace;
@@ -1337,7 +1345,7 @@ onMounted(() => {
   position: absolute;
   bottom: 20px;
   right: 20px;
-  left: 20px;
+  z-index: 1; /* 确保在内容之上 */
 }
 
 .redo-btn{
