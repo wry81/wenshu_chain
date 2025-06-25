@@ -24,7 +24,7 @@
     </div>
 
     <div class="agent-grid">
-      <div class="agent-card" @click="selectAgent(2)">
+      <div class="agent-card" @click="selectAgent(5)">
         <img src="../../assets/bg2.png" alt="智能体图片" class="agent-card-image" />
         <h3 class="agent-name">IP视觉形象概念</h3>
         <p class="agent-description">
