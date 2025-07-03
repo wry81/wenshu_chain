@@ -408,11 +408,13 @@ CREATE TABLE `wensoul_agent_runs` (
   `run_id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '工作流运行的唯一ID',
   `user_id` BIGINT NOT NULL COMMENT '发起运行的用户ID',
   `agent_id` BIGINT NOT NULL COMMENT '正在运行的智能体ID',
+  `run_name` VARCHAR(255) DEFAULT NULL COMMENT '运行名称',
   `status` VARCHAR(20) NOT NULL DEFAULT 'running' COMMENT '运行状态 (如: running, paused, completed, failed)',
   `run_name` VARCHAR(255) DEFAULT NULL COMMENT '运行名称',
   `workflow_snapshot` JSON DEFAULT NULL COMMENT '当次运行的工作流快照',
   `current_node_id` VARCHAR(100) DEFAULT NULL COMMENT '当前激活或最后完成的节点ID',
   `node_results` JSON DEFAULT NULL COMMENT '存储每个已完成节点输入和输出的JSON对象',
+  `workflow_snapshot` JSON DEFAULT NULL COMMENT '执行时的工作流快照',
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`run_id`),
@@ -425,6 +427,7 @@ CREATE TABLE `wensoul_agent_runs` (
 
 DROP TABLE IF EXISTS `wensoul_agent_run_nodes`;
 CREATE TABLE `wensoul_agent_run_nodes` (
+
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '运行节点ID',
   `run_id` BIGINT NOT NULL COMMENT '关联的运行ID',
   `node_id` VARCHAR(100) NOT NULL COMMENT '节点ID',

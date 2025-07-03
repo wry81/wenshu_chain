@@ -14,5 +14,4 @@ CREATE TABLE `wensoul_agent_run_nodes` (
   KEY `idx_run_id` (`run_id`),
   CONSTRAINT `fk_run_nodes_run` FOREIGN KEY (`run_id`) REFERENCES `wensoul_agent_runs`(`run_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='记录Agent运行的各节点输入输出';
-
 SET FOREIGN_KEY_CHECKS = 1;
