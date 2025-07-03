@@ -6,9 +6,11 @@ const { callLLM } = require('./llmService');
  * @param {number} agentId - 智能体ID
  * @param {string} input - 输入数据
  * @param {string} [nodeId] - (可选) 要执行的特定节点ID
+ * @param {number} userId - 发起运行的用户ID
+ * @param {string} [runName] - (可选) 自定义的运行名称
  * @returns {Promise<any>} - 节点或工作流的最终输出
  */
-async function runAgent(agentId, input, nodeId) {
+async function runAgent(agentId, input, nodeId, userId, runName) {
   const [rows] = await pool.query(
     'SELECT workflow FROM wensoul_agent WHERE id = ? AND status = 1',
     [agentId]
@@ -32,12 +34,42 @@ async function runAgent(agentId, input, nodeId) {
     return executeNode(node, input);
   }
 
-  // --- 保留原始的完整工作流执行逻辑 ---
+  // -------- 完整工作流执行并记录运行信息 --------
+  const [runInsert] = await pool.query(
+    `INSERT INTO wensoul_agent_runs (user_id, agent_id, status, run_name, workflow_snapshot)
+     VALUES (?, ?, 'running', ?, ?)`,
+    [userId, agentId, runName || null, JSON.stringify(workflow)]
+  );
+
+  const runId = runInsert.insertId;
+
   let context = input;
+  const nodeResults = {};
+
   for (const node of workflow) {
-    // 将上一步的输出作为当前步骤的输入
-    context = await executeNode(node, context);
+    const output = await executeNode(node, context);
+
+    nodeResults[node.nodeId] = { input: context, output };
+
+    await pool.query(
+      `INSERT INTO wensoul_agent_run_nodes (run_id, node_id, node_name, input, output)
+       VALUES (?, ?, ?, ?, ?)`,
+      [runId, node.nodeId, node.nodeName, JSON.stringify(context), JSON.stringify(output)]
+    );
+
+    context = output;
+
+    await pool.query(
+      'UPDATE wensoul_agent_runs SET current_node_id = ? WHERE run_id = ?',
+      [node.nodeId, runId]
+    );
   }
+
+  await pool.query(
+    `UPDATE wensoul_agent_runs SET status = 'completed', node_results = ?, current_node_id = ?
+     WHERE run_id = ?`,
+    [JSON.stringify(nodeResults), workflow[workflow.length - 1].nodeId, runId]
+  );
 
   return context;
 }
@@ -178,7 +210,76 @@ async function executeNode(node, input) {
   }
 }
 
+/**
+ * 获取指定运行的所有节点输入输出
+ * @param {number} runId
+ */
+async function getRunNodeOutputs(runId) {
+  const [rows] = await pool.query(
+    'SELECT node_id, input, output FROM wensoul_agent_run_nodes WHERE run_id = ? ORDER BY id',
+    [runId]
+  );
+  return rows;
+}
+
+/**
+ * 从暂停状态继续执行工作流
+ * @param {number} runId
+ * @param {any} input - 如果需要，可以传入新的初始输入
+ */
+async function resumeAgentRun(runId, input) {
+  const [runs] = await pool.query(
+    'SELECT workflow_snapshot, status FROM wensoul_agent_runs WHERE run_id = ?',
+    [runId]
+  );
+  if (runs.length === 0) {
+    throw new Error('Run not found');
+  }
+
+  const run = runs[0];
+  const workflow = JSON.parse(run.workflow_snapshot);
+
+  const [nodes] = await pool.query(
+    'SELECT node_id, output FROM wensoul_agent_run_nodes WHERE run_id = ? ORDER BY id',
+    [runId]
+  );
+
+  let context = input;
+  if (nodes.length > 0) {
+    context = nodes[nodes.length - 1].output;
+  }
+
+  const executedIds = nodes.map(n => n.node_id);
+
+  for (const node of workflow) {
+    if (executedIds.includes(node.nodeId)) {
+      continue;
+    }
+
+    const output = await executeNode(node, context);
+
+    await pool.query(
+      `INSERT INTO wensoul_agent_run_nodes (run_id, node_id, node_name, input, output)
+       VALUES (?, ?, ?, ?, ?)`,
+      [runId, node.nodeId, node.nodeName, JSON.stringify(context), JSON.stringify(output)]
+    );
+
+    context = output;
+  }
+
+  const nodeOutputs = await getRunNodeOutputs(runId);
+
+  await pool.query(
+    `UPDATE wensoul_agent_runs SET status = 'completed', node_results = ?, current_node_id = ? WHERE run_id = ?`,
+    [JSON.stringify(nodeOutputs), workflow[workflow.length - 1].nodeId, runId]
+  );
+
+  return context;
+}
+
 
 module.exports = {
   runAgent,
+  getRunNodeOutputs,
+  resumeAgentRun,
 };
