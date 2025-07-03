@@ -42,6 +42,7 @@ SOURCE wensoul_user_usage_stats.sql;
 SOURCE wensoul_agent.sql;
 SOURCE wensoul_user_agent.sql;
 SOURCE wensoul_agent_runs.sql;
+SOURCE wensoul_agent_run_nodes.sql;
 
 SET FOREIGN_KEY_CHECKS = 1;
 

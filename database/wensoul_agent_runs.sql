@@ -10,6 +10,8 @@ CREATE TABLE `wensoul_agent_runs` (
   `user_id` BIGINT NOT NULL COMMENT '发起运行的用户ID',
   `agent_id` BIGINT NOT NULL COMMENT '正在运行的智能体ID',
   `status` VARCHAR(20) NOT NULL DEFAULT 'running' COMMENT '运行状态 (如: running, paused, completed, failed)',
+  `run_name` VARCHAR(255) DEFAULT NULL COMMENT '运行名称',
+  `workflow_snapshot` JSON DEFAULT NULL COMMENT '当次运行的工作流快照',
   `current_node_id` VARCHAR(100) DEFAULT NULL COMMENT '当前激活或最后完成的节点ID',
   `node_results` JSON DEFAULT NULL COMMENT '存储每个已完成节点输入和输出的JSON对象',
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
