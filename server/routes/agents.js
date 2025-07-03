@@ -43,7 +43,7 @@ router.get('/', async (req, res) => {
 
 router.post('/:id/run', auth, async (req, res) => {
   // 从请求体中解构出 nodeId
-  const { input, nodeId } = req.body; 
+  const { input, nodeId, runName } = req.body;
   const agentId = req.params.id;
   const userId = req.user.id;
   
@@ -54,8 +54,8 @@ router.post('/:id/run', auth, async (req, res) => {
       return res.status(403).json({ message: 'Access denied. You do not have an active subscription or have not purchased this agent.' });
     }
 
-    // 将 input 和 nodeId 都传递给服务
-    const result = await agentService.runAgent(agentId, input, nodeId);
+    // 将 input、nodeId 以及用户信息传递给服务
+    const result = await agentService.runAgent(agentId, input, nodeId, userId, runName);
     res.json({ result });
   } catch (err) {
     console.error(err);
