@@ -99,8 +99,7 @@
         <span v-if="isRunning">运行中...</span>
         <span v-else>运行</span>
       </button>
-
-      <button class="run-btn" @click="runCurrentNode">
+      <button class="runCurrent-btn" @click="runCurrentNode">
         <span v-if="nodes[focusedNodeIndex].loading">运行中...</span>
         <span v-else>运行当前节点</span>
       </button>
@@ -718,7 +717,7 @@ h2 {
 
 .task-bar {
   height: 80px;
-  width: 520px;
+  width: 650px;
   background-color: #fff;
   border-radius: var(--border-radius-large);
   box-shadow: var(--box-shadow-soft);
@@ -777,13 +776,23 @@ h2 {
 }
 
 .exit-btn {
-  padding: 15px 25px;
-  border: none;
+  height: 50px;                /* 统一高度 */
+  min-width: 100px;            /* 统一最小宽度，防止竖排 */
+  padding: 0 32px;             /* 左右内边距大于上下 */
   border-radius: 16px;
+  font-size: 18px;             /* 统一字号 */
+  line-height: 50px;           /* 垂直居中 */
+  white-space: nowrap;         /* 不换行 */
+  display: inline-flex;        /* 横向排列 */
+  align-items: center;         /* 垂直居中 */
+  justify-content: center;     /* 水平居中 */
+  box-sizing: border-box;
   background-color: var(--color-divider);
   color: var(--color-text-body);
   cursor: pointer;
-  font-size: var(--font-size-body);
+  box-shadow: none !important;   /* 强制无阴影 */
+  border: none;                  /* 默认无边框 */
+  outline: none;
 }
 
 .exit-btn:hover {
@@ -791,27 +800,71 @@ h2 {
 }
 
 .redoall-btn {
-  padding: 15px 30px;
-  border: 1px solid var(--theme-color-60);
+  height: 50px;                /* 统一高度 */
+  min-width: 120px;            /* 统一最小宽度，防止竖排 */
+  padding: 0 32px;             /* 左右内边距大于上下 */
   border-radius: 16px;
-  background-color: #fff;
-  color: var(--theme-color-60);
+  font-size: 18px;             /* 统一字号 */
+  line-height: 50px;           /* 垂直居中 */
+  white-space: nowrap;         /* 不换行 */
+  display: inline-flex;        /* 横向排列 */
+  align-items: center;         /* 垂直居中 */
+  justify-content: center;     /* 水平居中 */
+  box-sizing: border-box;
+  background-color: var(--color-divider);
+  color: var(--color-text-body);
   cursor: pointer;
-  font-size: var(--font-size-body);
+  box-shadow: none !important;   /* 强制无阴影 */
+  border: none;                  /* 默认无边框 */
+  outline: none;
 }
 
 .redoall-btn:hover {
   background-color: var(--theme-color-20);
 }
 
-.run-btn {
-  padding: 15px 40px;
-  border: none;
+.runCurrent-btn {
+  height: 50px;                /* 统一高度 */
+  min-width: 140px;            /* 统一最小宽度，防止竖排 */
+  padding: 0 32px;             /* 左右内边距大于上下 */
   border-radius: 16px;
+  font-size: 18px;             /* 统一字号 */
+  line-height: 50px;           /* 垂直居中 */
+  white-space: nowrap;         /* 不换行 */
+  display: inline-flex;        /* 横向排列 */
+  align-items: center;         /* 垂直居中 */
+  justify-content: center;     /* 水平居中 */
+  box-sizing: border-box;
   background-color: var(--theme-color-60);
   color: #fff;
   cursor: pointer;
-  font-size: var(--font-size-body);
+  box-shadow: none !important;   /* 强制无阴影 */
+  border: none;                  /* 默认无边框 */
+  outline: none;
+}
+
+.runCurrent-btn:hover {
+  background-color: #cb6666;
+}
+
+.run-btn {
+  height: 50px;                /* 统一高度 */
+  min-width: 100px;            /* 统一最小宽度，防止竖排 */
+  padding: 0 32px;             /* 左右内边距大于上下 */
+  border-radius: 16px;
+  font-size: 18px;             /* 统一字号 */
+  line-height: 50px;           /* 垂直居中 */
+  white-space: nowrap;         /* 不换行 */
+  display: inline-flex;        /* 横向排列 */
+  align-items: center;         /* 垂直居中 */
+  justify-content: center;     /* 水平居中 */
+  box-sizing: border-box;
+  background-color: var(--theme-color-60);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: none !important;   /* 强制无阴影 */
+  border: none;                  /* 默认无边框 */
+  outline: none;
 }
 
 .run-btn:hover {
