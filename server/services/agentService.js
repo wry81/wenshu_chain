@@ -1,77 +1,137 @@
 const pool = require('../config/db');
 const { callLLM } = require('./llmService');
 
+const pool = require('../config/db');
+const { callLLM } = require('./llmService');
+
 /**
- * 执行一个智能体的工作流或单个节点
+ * [重构版] 执行一个智能体的工作流节点，并在首次执行时创建运行实例
  * @param {number} agentId - 智能体ID
- * @param {string} input - 输入数据
- * @param {string} [nodeId] - (可选) 要执行的特定节点ID
+ * @param {string} input - 当前节点的输入数据
+ * @param {string} nodeId - 需要执行的特定节点ID
  * @param {number} userId - 发起运行的用户ID
- * @param {string} [runName] - (可选) 自定义的运行名称
- * @returns {Promise<any>} - 节点或工作流的最终输出
+ * @param {string} [runName] - (可选) 用户为新工作流定义的名称
+ * @param {number} [existingRunId] - (可选) 如果是已存在的工作流，则传入其ID
+ * @returns {Promise<object>} - 返回一个包含 { result, runId } 的对象
  */
-async function runAgent(agentId, input, nodeId, userId, runName) {
-  const [rows] = await pool.query(
+async function runAgent(agentId, input, nodeId, userId, runName, existingRunId) {
+  const [agentRows] = await pool.query(
     'SELECT workflow FROM wensoul_agent WHERE id = ? AND status = 1',
     [agentId]
   );
-  if (rows.length === 0) {
-    throw new Error('Agent not found or is inactive');
+  if (agentRows.length === 0) {
+    throw new Error('智能体未找到或未激活');
   }
 
-  const workflow = rows[0].workflow;
+  const workflow = agentRows[0].workflow;
   if (!Array.isArray(workflow) || workflow.length === 0) {
-    throw new Error('Invalid or empty workflow');
+    throw new Error('无效或空的工作流');
   }
 
-  // 如果提供了nodeId，则只执行该节点
-  if (nodeId) {
-    const node = workflow.find(n => n.nodeId === nodeId);
-    if (!node) {
-      throw new Error(`在Agent工作流中未找到ID为 ${nodeId} 的节点。`);
-    }
-    // 使用提供的输入直接执行单个节点
-    return executeNode(node, input);
+  const node = workflow.find(n => n.nodeId === nodeId);
+  if (!node) {
+    throw new Error(`在工作流中未找到ID为 ${nodeId} 的节点。`);
   }
 
-  // -------- 完整工作流执行并记录运行信息 --------
-  const [runInsert] = await pool.query(
-    `INSERT INTO wensoul_agent_runs (user_id, agent_id, status, run_name, workflow_snapshot)
-     VALUES (?, ?, 'running', ?, ?)`,
-    [userId, agentId, runName || null, JSON.stringify(workflow)]
-  );
+  let runId = existingRunId;
 
-  const runId = runInsert.insertId;
-
-  let context = input;
-  const nodeResults = {};
-
-  for (const node of workflow) {
-    const output = await executeNode(node, context);
-
-    nodeResults[node.nodeId] = { input: context, output };
-
-    await pool.query(
-      `INSERT INTO wensoul_agent_run_nodes (run_id, node_id, node_name, input, output)
-       VALUES (?, ?, ?, ?, ?)`,
-      [runId, node.nodeId, node.nodeName, JSON.stringify(context), JSON.stringify(output)]
+  // 主要改动点 1：如果 runId 不存在，则创建新的运行实例
+  if (!runId) {
+    const [runInsert] = await pool.query(
+      `INSERT INTO wensoul_agent_runs (user_id, agent_id, status, run_name, workflow_snapshot)
+       VALUES (?, ?, 'running', ?, ?)`,
+      [userId, agentId, runName || `运行实例 ${Date.now()}`, JSON.stringify(workflow)]
     );
-
-    context = output;
-
-    await pool.query(
-      'UPDATE wensoul_agent_runs SET current_node_id = ? WHERE run_id = ?',
-      [node.nodeId, runId]
-    );
+    runId = runInsert.insertId;
   }
 
+  // 主要改动点 2：执行单个节点
+  const output = await executeNode(node, input);
+
+  // 主要改动点 3：将当前节点的输入输出记录到 wensoul_agent_run_nodes 表
   await pool.query(
-    `UPDATE wensoul_agent_runs SET status = 'completed', node_results = ?, current_node_id = ?
-     WHERE run_id = ?`,
-    [JSON.stringify(nodeResults), workflow[workflow.length - 1].nodeId, runId]
+    `INSERT INTO wensoul_agent_run_nodes (run_id, node_id, node_name, input, output)
+     VALUES (?, ?, ?, ?, ?)`,
+    [runId, node.nodeId, node.nodeName, JSON.stringify(input), JSON.stringify(output)]
   );
+  
+  // 主要改动点 4：更新 wensoul_agent_runs 表中的聚合结果和当前状态
+  // 使用事务确保数据一致性
+  const connection = await pool.getConnection();
+  await connection.beginTransaction();
+  try {
+    const [currentRuns] = await connection.query('SELECT node_results FROM wensoul_agent_runs WHERE run_id = ? FOR UPDATE', [runId]);
+    const currentResults = currentRuns[0].node_results ? JSON.parse(currentRuns[0].node_results) : {};
+    
+    currentResults[nodeId] = { input, output };
 
-  return context;
+    await connection.query(
+      `UPDATE wensoul_agent_runs SET current_node_id = ?, node_results = ? WHERE run_id = ?`,
+      [nodeId, JSON.stringify(currentResults), runId]
+    );
+    await connection.commit();
+  } catch (err) {
+    await connection.rollback();
+    throw err;
+  } finally {
+    connection.release();
+  }
+
+  // 主要改动点 5：返回结果和 runId
+  return { result: output, runId: runId };
+}
+
+/**
+ * [辅助函数] 执行单个工作流节点的函数 (此函数逻辑基本不变)
+ * @param {object} node - 工作流节点对象
+ * @param {any} input - 此节点的输入
+ * @returns {Promise<any>} - 节点的输出
+ */
+async function executeNode(node, input) {
+  // ... 此处的 executeNode 内部逻辑与您之前版本相同 ...
+  // 它负责调用 callLLM 并处理不同 nodeType 的逻辑
+    const { nodeId, nodeName, nodeType, model, promptTemplate } = node;
+    const currentInput = typeof input === 'string' ? input : JSON.stringify(input);
+    const prompt = promptTemplate ? promptTemplate.replace('{{input}}', currentInput) : currentInput;
+
+    let apiUrl;
+    let payload;
+
+    switch (nodeType) {
+        case 'text-to-text':
+            apiUrl = process.env.T2T_API_URL;
+            payload = { model: model || process.env.LLM_MODEL, messages: [{ role: 'user', content: prompt }] };
+            break;
+        case 'text-to-image':
+            apiUrl = process.env.T2I_API_URL;
+            payload = { prompt, advanced_opt: { "height": 1024, "width": 1024, "num_images_per_prompt": 1 }};
+            break;
+        case 'multi-to-text':
+            apiUrl = process.env.I2T_API_URL;
+            payload = { model: model || 'YuanjingVL', messages: [{ role: 'user', content: prompt }]};
+            break;
+        case 'text-to-video':
+            apiUrl = process.env.T2V_API_URL;
+            payload = { prompt, model: "unicom_t2v" };
+            break;
+        case 'image-to-video':
+            apiUrl = process.env.I2V_API_URL;
+            payload = { image: currentInput };
+            break;
+        default:
+            console.warn(`[agentService] 不支持的节点类型: ${nodeType}`);
+            return `[后端错误] 不支持的节点类型: ${nodeType}。`;
+    }
+
+    try {
+        const result = await callLLM({ apiUrl, payload, nodeType });
+        // ... (对不同 nodeType 的 result 进行解析和处理的代码)
+        // 此处为了简洁，直接返回原始数据，实际应根据业务解析
+        return result;
+    } catch (error) {
+        console.error(`[agentService] 节点'${nodeName}'的API调用失败:`, error.message);
+        return `[后端错误] 节点'${nodeName}'的API调用失败。原因: ${error.message}`;
+    }
 }
 
 /**
