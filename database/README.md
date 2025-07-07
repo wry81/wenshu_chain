@@ -119,6 +119,10 @@
 
 #### 7.3 智能体运行记录表 (`wensoul_agent_runs`)
 - 按运行实例追踪每个工作流的状态与节点结果
+- 新增 `run_name`、`workflow_snapshot` 字段记录运行名称和执行时的工作流快照
+
+#### 7.4 运行节点记录表 (`wensoul_agent_run_nodes`)
+- 逐节点保存输入输出等运行数据
 
 ## 索引设计
 
@@ -213,6 +217,7 @@ database/
 ├── wensoul_agent.sql                  # 智能体表
 ├── wensoul_user_agent.sql             # 用户智能体表
 ├── wensoul_agent_runs.sql             # 智能体运行记录表
+├── wensoul_agent_run_nodes.sql        # 运行节点记录表
 ├── init_all_tables.sql                # 完整初始化脚本
 ├── init_complete.sql                  # 单文件初始化脚本
 └── README.md                          # 详细设计文档
