@@ -6,7 +6,7 @@
       </div>
       <h1>文枢链</h1>
       <p class="subtitle">AI语义驱动文档设计云平台</p>
-      <p class="copyright">©版规所有：文枢链 2025</p>
+      <p class="copyright">‌©版权所有：嘉善文枢智创科技有限公司 2025</p>
     </div>
     <div class="login-right">
       <div class="login-card">
