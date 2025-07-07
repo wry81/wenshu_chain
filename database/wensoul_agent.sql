@@ -18,46 +18,42 @@ CREATE TABLE `wensoul_agent` (
 -- 插入使用新工作流结构的模拟数据
 -- 需要更改model
 INSERT INTO `wensoul_agent` (`agent_name`, `agent_description`, `workflow`) VALUES
-('市场趋势分析', '结合多模型进行市场数据与趋势分析', '[
+('智能市场分析引擎','基于市场数据分析的全流程智能分析系统','[
   {
     "nodeId": "step1_analyze_market",
     "nodeName": "分析市场数据",
     "nodeType": "text-to-text",
-    "model": "deepseek-v3", 
-    "promptTemplate": "请根据以下市场信息，分析其主要趋势、机遇和挑战：\n\n{{input}}"
-  }
-]'),
-('爆款文案助手', '生成吸引人的营销文案', '[
+    "model": "deepseek-v3",
+    "promptTemplate": "请根据以下市场信息，分析其主要趋势、机遇和挑战：\\n\\n{{input}}"
+  },
   {
-    "nodeId": "step1_generate_copy",
-    "nodeName": "生成营销文案",
+    "nodeId": "step2_social_analysis",
+    "nodeName": "社媒热点分析",
     "nodeType": "text-to-text",
     "model": "deepseek-v3",
-    "promptTemplate": "为一款产品或服务（产品信息：{{input}}）生成五条不同风格的爆款营销文案。"
-  }
-]'),
-('概念产品生成', '从文本到3D模型的完整概念设计流程', '[
+    "promptTemplate": "基于当前市场分析，进行社交媒体热点词汇抓取与分析：\\n\\n{{input}}"
+  },
   {
-    "nodeId": "step1_refine_concept",
-    "nodeName": "提炼核心设计元素",
+    "nodeId": "step3_competitor_research",
+    "nodeName": "竞品调研",
     "nodeType": "text-to-text",
     "model": "deepseek-v3",
-    "promptTemplate": "根据以下产品创意（{{input}}），提炼出5-7个核心视觉设计关键词，用于后续的图像生成。"
+    "promptTemplate": "结合市场和社媒分析，对竞争对手进行深度调研分析：\\n\\n{{input}}"
   },
   {
-    "nodeId": "step2_generate_images",
-    "nodeName": "生成概念图",
-    "nodeType": "text-to-image",
-    "model": "unicom_t2i",
-    "promptTemplate": "A high-detail concept art of a product based on the following elements: {{input}}"
+    "nodeId": "step4_challenge_opportunity",
+    "nodeName": "现状挑战与机遇",
+    "nodeType": "text-to-text",
+    "model": "deepseek-v3",
+    "promptTemplate": "基于前述分析，总结当前市场的主要挑战与机遇：\\n\\n{{input}}"
   },
   {
-    "nodeId": "step3_generate_model",
-    "nodeName": "生成3D模型",
-    "nodeType": "image-to-model",
-    "model": "internal-3d-generator-v2",
-    "promptTemplate": ""
-  },
+    "nodeId": "step5_doc_generation",
+    "nodeName": "文档生成",
+    "nodeType": "text-to-text",
+    "model": "deepseek-v3",
+    "promptTemplate": "综合以上所有分析结果，生成完整的市场分析报告：\\n\\n{{input}}"
+  }
 ]'),
 ('叙事引擎','基于文化元素分析的文旅 IP 全流程叙事生成','[
   {
@@ -95,7 +91,7 @@ INSERT INTO `wensoul_agent` (`agent_name`, `agent_description`, `workflow`) VALU
     "model": "deepseek-v3",
     "promptTemplate": "综合以上内容，为该 IP 生成完整策划说明文档（含背景故事、形象说明、应用场景等）：\\n\\n{{input}}"
   }
-  ]');  
+  ]'),
 ('文旅IP多模态创作','融合图文问答、视觉原型、动态表情包及场景化延展的 IP 创作流程','[
   {
     "nodeId": "step1_decompose",
