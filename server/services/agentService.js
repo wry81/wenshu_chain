@@ -1,9 +1,6 @@
 const pool = require('../config/db');
 const { callLLM } = require('./llmService');
 
-const pool = require('../config/db');
-const { callLLM } = require('./llmService');
-
 /**
  * [重构版] 执行一个智能体的工作流节点，并在首次执行时创建运行实例
  * @param {number} agentId - 智能体ID
@@ -82,59 +79,6 @@ async function runAgent(agentId, input, nodeId, userId, runName, existingRunId) 
 }
 
 /**
- * [辅助函数] 执行单个工作流节点的函数 (此函数逻辑基本不变)
- * @param {object} node - 工作流节点对象
- * @param {any} input - 此节点的输入
- * @returns {Promise<any>} - 节点的输出
- */
-async function executeNode(node, input) {
-  // ... 此处的 executeNode 内部逻辑与您之前版本相同 ...
-  // 它负责调用 callLLM 并处理不同 nodeType 的逻辑
-    const { nodeId, nodeName, nodeType, model, promptTemplate } = node;
-    const currentInput = typeof input === 'string' ? input : JSON.stringify(input);
-    const prompt = promptTemplate ? promptTemplate.replace('{{input}}', currentInput) : currentInput;
-
-    let apiUrl;
-    let payload;
-
-    switch (nodeType) {
-        case 'text-to-text':
-            apiUrl = process.env.T2T_API_URL;
-            payload = { model: model || process.env.LLM_MODEL, messages: [{ role: 'user', content: prompt }] };
-            break;
-        case 'text-to-image':
-            apiUrl = process.env.T2I_API_URL;
-            payload = { prompt, advanced_opt: { "height": 1024, "width": 1024, "num_images_per_prompt": 1 }};
-            break;
-        case 'multi-to-text':
-            apiUrl = process.env.I2T_API_URL;
-            payload = { model: model || 'YuanjingVL', messages: [{ role: 'user', content: prompt }]};
-            break;
-        case 'text-to-video':
-            apiUrl = process.env.T2V_API_URL;
-            payload = { prompt, model: "unicom_t2v" };
-            break;
-        case 'image-to-video':
-            apiUrl = process.env.I2V_API_URL;
-            payload = { image: currentInput };
-            break;
-        default:
-            console.warn(`[agentService] 不支持的节点类型: ${nodeType}`);
-            return `[后端错误] 不支持的节点类型: ${nodeType}。`;
-    }
-
-    try {
-        const result = await callLLM({ apiUrl, payload, nodeType });
-        // ... (对不同 nodeType 的 result 进行解析和处理的代码)
-        // 此处为了简洁，直接返回原始数据，实际应根据业务解析
-        return result;
-    } catch (error) {
-        console.error(`[agentService] 节点'${nodeName}'的API调用失败:`, error.message);
-        return `[后端错误] 节点'${nodeName}'的API调用失败。原因: ${error.message}`;
-    }
-}
-
-/**
  * [最终版-简洁错误提示] 用于执行单个工作流节点的辅助函数
  * @param {object} node - 工作流节点对象
  * @param {any} input - 此节点的输入
@@ -167,31 +111,56 @@ async function executeNode(node, input) {
         }
       };
       break;
-
-      case 'multi-to-text':
-        // 图文问答：必须传 messages 数组
-        apiUrl = process.env.I2T_API_URL;
-        payload = {
-          model: model || 'YuanjingVL',
-          messages: [
-            {
-              role: 'user',
-              content: prompt
+    case 'multi-to-text':
+      apiUrl = process.env.I2T_API_URL;
+      
+      // 处理输入内容，支持图像和文本混合
+      let messageContent;
+      
+      // 检查输入是否包含图像（Base64或URL）
+      if (typeof currentInput === 'string' && 
+          (currentInput.startsWith('data:image/') || currentInput.startsWith('http'))) {
+        // 如果输入是图像，按照官方示例格式：先text后image_url
+        messageContent = [
+          {
+            type: 'text',
+            text: prompt || '请分析这张图片'
+          },
+          {
+            type: 'image_url',
+            image_url: {
+              url: currentInput
             }
-          ]
-          // 如果需要，可以在这里附加 max_tokens, temperature...
-        };
+          }
+        ];
+      } else {
+        // 如果输入是纯文本，也使用数组格式（多模态模型要求）
+        messageContent = [
+          {
+            type: 'text',
+            text: prompt
+          }
+        ];
+      }
+      
+      payload = {
+        model: 'Llama-4-Maverick-17B-128E-Instruct',
+        messages: [
+          {
+            role: 'user',
+            content: messageContent
+          }
+        ]
+      };
       break;
-
     case 'text-to-video':
       // 文本生成视频：先提交生成任务
       apiUrl = process.env.T2V_API_URL;
       payload = {
         prompt: prompt,
-        model: unicom_t2v
+        model: "unicom_t2v"
       };
       break;
-
     case 'image-to-video':
       // 图生视频：将图片转换为视频
       apiUrl = process.env.I2V_API_URL;
@@ -199,10 +168,9 @@ async function executeNode(node, input) {
         image: currentInput
       };
       break;
-
     default:
       console.warn(`[agentService] 不支持的节点类型: ${nodeType}`);
-      return `[后端错误] 前端请求了一个不支持的节点类型: ${nodeType}。`;
+      return `[后端错误] 不支持的节点类型: ${nodeType}。`;
   }
 
   try {
@@ -223,8 +191,12 @@ async function executeNode(node, input) {
       }
     }
     else if (nodeType === 'multi-to-text') {
-      // 同步返回多模态文本结果列表（result.result包含文本字符串）
-      if (result && (result.code === 0 || result.code === '0')
+      // 按照OpenAI标准格式处理返回结果
+      if (result && result.choices?.[0]?.message?.content) {
+        return result.choices[0].message.content;
+      }
+      // 如果不是标准格式，尝试其他格式
+      else if (result && (result.code === 0 || result.code === '0')
           && Array.isArray(result.result) && result.result.length > 0) {
         return result.result[0];
       }
@@ -265,8 +237,7 @@ async function executeNode(node, input) {
   } catch (error) {
     // 如果axios请求直接失败
     console.error(`[agentService] 节点'${nodeName}'的API调用失败:`, error.message);
-    // === 修改点：返回简洁的错误原因 ===
-    return `[后端错误] 节点'${nodeName}'的API调用失败。原因: 无法连接到模型服务，请检查网络或联系管理员。`;
+    return `[后端错误] 节点'${nodeName}'的API调用失败。原因: ${error.message}`;
   }
 }
 

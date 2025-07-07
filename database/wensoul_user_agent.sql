@@ -22,6 +22,8 @@ CREATE TABLE `wensoul_user_agent` (
 
 -- 插入模拟数据
 INSERT INTO `wensoul_user_agent` (`user_id`, `agent_id`, `subscription_duration`, `subscription_expire_time`) VALUES 
-(1, 1, 30, DATE_ADD(NOW(), INTERVAL 30 DAY));
+(3, 1, 1000, DATE_ADD(NOW(), INTERVAL 1000 DAY)),
+(3, 2, 1000, DATE_ADD(NOW(), INTERVAL 1000 DAY)),
+(3, 3, 1000, DATE_ADD(NOW(), INTERVAL 1000 DAY)),
 
 SET FOREIGN_KEY_CHECKS = 1;
