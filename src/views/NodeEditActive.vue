@@ -419,8 +419,89 @@ const isAnyNodeLoading = computed(() => {
   return nodes.value.some(node => node.loading);
 });
 
+// 节点模态类型判断
+const getNodeModalityType = (nodeId) => {
+  // 根据节点ID判断其输入/输出模态类型
+  const modalityMap = {
+    'step1_decompose': { input: 'multimodal', output: 'text' },        // 多模态输入，文本输出
+    'step2_visual_prototype': { input: 'text', output: 'image' },      // 文本输入，图像输出
+    'step3_dynamic_emojis': { input: 'image', output: 'video' },       // 图像输入，视频输出
+    'step4_scenario_extension': { input: 'text', output: 'image' }     // 文本输入，图像输出
+  };
+  return modalityMap[nodeId] || { input: 'text', output: 'text' };
+};
+
+// 检查两个节点的模态是否兼容
+const areModalitiesCompatible = (prevNodeId, nextNodeId) => {
+  const prevModality = getNodeModalityType(prevNodeId);
+  const nextModality = getNodeModalityType(nextNodeId);
+  return prevModality.output === nextModality.input;
+};
+
+// 智能数据传递：将前一个节点的输出适配到下一个节点的输入
+const transferDataBetweenNodes = (fromIndex, toIndex) => {
+  const fromNode = nodes.value[fromIndex];
+  const toNode = nodes.value[toIndex];
+  
+  if (!fromNode.result) return false;
+  
+  const fromModality = getNodeModalityType(fromNode.nodeId);
+  const toModality = getNodeModalityType(toNode.nodeId);
+  
+  // 检查模态兼容性
+  if (fromModality.output !== toModality.input) {
+    console.log(`模态不匹配: ${fromModality.output} -> ${toModality.input}, 停止自动执行`);
+    return false;
+  }
+  
+  // 根据模态类型传递数据
+  switch (toModality.input) {
+    case 'text':
+      // 如果下一个节点需要文本输入
+      if (isImageUrl(fromNode.result)) {
+        // 如果前一个节点输出是图片，生成描述性文本
+        toNode.prompt = `请基于上一步生成的图片继续处理。`;
+      } else {
+        // 如果前一个节点输出是文本，直接传递
+        toNode.prompt = fromNode.result;
+      }
+      break;
+      
+    case 'image':
+      // 如果下一个节点需要图像输入
+      if (isImageUrl(fromNode.result)) {
+        toNode.imageData = fromNode.result;
+        toNode.prompt = '请基于上一步生成的图片进行处理。';
+      } else {
+        console.log('前一个节点输出不是图片，无法传递给需要图像输入的节点');
+        return false;
+      }
+      break;
+      
+    case 'video':
+      // 如果下一个节点需要视频输入
+      if (fromNode.result.includes('.mp4') || fromNode.result.includes('video')) {
+        toNode.videoData = fromNode.result;
+        toNode.prompt = '请基于上一步生成的视频进行处理。';
+      } else {
+        console.log('前一个节点输出不是视频，无法传递给需要视频输入的节点');
+        return false;
+      }
+      break;
+      
+    case 'multimodal':
+      // 多模态输入节点通常不需要自动传递，由用户手动输入
+      return false;
+      
+    default:
+      toNode.prompt = fromNode.result;
+  }
+  
+  return true;
+};
+
 const runAllNodes = async () => {
-  if (isRunning.value) return; // 防止重复点击
+  if (isRunning.value) return;
   
   isRunning.value = true;
   
@@ -431,25 +512,67 @@ const runAllNodes = async () => {
       // 自动聚焦到当前节点
       await focusNode(i);
       
-      // 跳过已完成的节点（可选，根据需求决定是否保留）
-      if (node.completed && node.result) continue;
+      // 如果不是第一个节点，尝试从前一个节点传递数据
+      if (i > 0) {
+        const prevNode = nodes.value[i - 1];
+        
+        // 检查前一个节点是否已完成
+        if (!prevNode.completed || !prevNode.result) {
+          console.log(`前一个节点未完成，停止在节点 ${i}`);
+          break;
+        }
+        
+        // 尝试传递数据
+        const canTransfer = transferDataBetweenNodes(i - 1, i);
+        if (!canTransfer) {
+          console.log(`节点 ${i - 1} 到节点 ${i} 数据传递失败，需要用户手动输入`);
+          // 模态不匹配或传递失败，停止自动执行
+          alert(`模态不匹配或需要用户输入，自动执行停止在第${i + 1}个节点。请手动输入内容后继续。`);
+          break;
+        }
+      }
       
-      // 重置节点状态（可选）
+      // 检查当前节点是否有输入内容
+      if (!node.prompt.trim() && !node.imageData) {
+        if (i === 0) {
+          alert(`第${i + 1}个节点需要用户手动输入内容，请输入后重新运行。`);
+        } else {
+          alert(`第${i + 1}个节点无法自动获取输入，请手动输入内容后继续。`);
+        }
+        break;
+      }
+      
+      // 重置节点状态
       node.result = '';
       node.completed = false;
       
       // 执行当前节点
       try {
         await callAgentApi(i);
+        
+        // 检查执行是否成功
+        if (!node.completed || !node.result) {
+          console.log(`节点 ${i} 执行失败，停止自动执行`);
+          break;
+        }
+        
+        console.log(`节点 ${i} 执行完成，输出:`, node.result.substring(0, 100) + '...');
+        
       } catch (error) {
         console.error(`节点 ${i} 执行失败:`, error);
-        // 可以选择继续执行后续节点或中断
-        // break; // 如果要中断执行，取消这行注释
+        alert(`第${i + 1}个节点执行失败: ${error.message}`);
+        break;
       }
       
-      // 添加短暂延迟，避免请求过于密集（可选）
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // 添加短暂延迟
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
+    
+    // 所有节点执行完成
+    if (nodes.value.every(node => node.completed)) {
+      alert('🎉 所有节点执行完成！多模态创作工作流已完成。');
+    }
+    
   } finally {
     isRunning.value = false;
   }

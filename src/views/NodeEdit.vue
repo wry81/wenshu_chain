@@ -336,9 +336,63 @@ const runCurrentNode = () => {
   }
 };
 
+// 节点模态类型判断 - 文本分析工作流
+const getNodeModalityType = (nodeId) => {
+  // 根据节点ID判断其输入/输出模态类型
+  const modalityMap = {
+    'step1_analyze_market': { input: 'text', output: 'text' },      // 文本输入，文本输出
+    'step2_social_analysis': { input: 'text', output: 'text' },    // 文本输入，文本输出
+    'step3_competitor_research': { input: 'text', output: 'text' }, // 文本输入，文本输出
+    'step4_challenge_opportunity': { input: 'text', output: 'text' }, // 文本输入，文本输出
+    'step5_doc_generation': { input: 'text', output: 'text' }      // 文本输入，文本输出
+  };
+  return modalityMap[nodeId] || { input: 'text', output: 'text' };
+};
+
+// 检查两个节点的模态是否兼容
+const areModalitiesCompatible = (prevNodeId, nextNodeId) => {
+  const prevModality = getNodeModalityType(prevNodeId);
+  const nextModality = getNodeModalityType(nextNodeId);
+  return prevModality.output === nextModality.input;
+};
+
+// 智能数据传递：将前一个节点的输出适配到下一个节点的输入
+const transferDataBetweenNodes = (fromIndex, toIndex) => {
+  const fromNode = nodes.value[fromIndex];
+  const toNode = nodes.value[toIndex];
+  
+  if (!fromNode.result) return false;
+  
+  const fromModality = getNodeModalityType(fromNode.nodeId);
+  const toModality = getNodeModalityType(toNode.nodeId);
+  
+  // 检查模态兼容性
+  if (fromModality.output !== toModality.input) {
+    console.log(`模态不匹配: ${fromModality.output} -> ${toModality.input}, 停止自动执行`);
+    return false;
+  }
+  
+  // 对于文本分析工作流，大部分都是文本到文本的传递
+  if (toModality.input === 'text') {
+    // 根据具体节点类型添加上下文提示
+    const nodePrompts = {
+      'step2_social_analysis': `基于以下市场分析结果，请进行社交媒体热点分析：\n\n${fromNode.result}`,
+      'step3_competitor_research': `基于以下分析结果，请进行竞品调研：\n\n${fromNode.result}`,
+      'step4_challenge_opportunity': `基于以下分析结果，请总结现状挑战与机遇：\n\n${fromNode.result}`,
+      'step5_doc_generation': `基于以上所有分析结果，请生成完整的分析文档：\n\n${fromNode.result}`
+    };
+    
+    toNode.prompt = nodePrompts[toNode.nodeId] || fromNode.result;
+  } else {
+    toNode.prompt = fromNode.result;
+  }
+  
+  return true;
+};
+
 // 运行所有节点
 const runAllNodes = async () => {
-  if (isRunning.value) return; // 防止重复点击
+  if (isRunning.value) return;
   
   isRunning.value = true;
   
@@ -349,25 +403,70 @@ const runAllNodes = async () => {
       // 自动聚焦到当前节点
       await focusNode(i);
       
-      // 跳过已完成的节点（可选，根据需求决定是否保留）
-      if (node.completed && node.result) continue;
+      // 如果不是第一个节点，尝试从前一个节点传递数据
+      if (i > 0) {
+        const prevNode = nodes.value[i - 1];
+        
+        // 检查前一个节点是否已完成
+        if (!prevNode.completed || !prevNode.result) {
+          console.log(`前一个节点未完成，停止在节点 ${i}`);
+          alert(`前一个节点未完成，自动执行停止在第${i + 1}个节点。`);
+          break;
+        }
+        
+        // 尝试传递数据
+        const canTransfer = transferDataBetweenNodes(i - 1, i);
+        if (!canTransfer) {
+          console.log(`节点 ${i - 1} 到节点 ${i} 数据传递失败，需要用户手动输入`);
+          alert(`数据传递失败，自动执行停止在第${i + 1}个节点。请手动输入内容后继续。`);
+          break;
+        }
+        
+        console.log(`数据已从节点 ${i} 传递到节点 ${i + 1}`);
+      }
       
-      // 重置节点状态（可选）
+      // 检查当前节点是否有输入内容
+      if (!node.prompt.trim()) {
+        if (i === 0) {
+          alert(`第${i + 1}个节点需要用户手动输入内容，请输入后重新运行。`);
+        } else {
+          alert(`第${i + 1}个节点无法自动获取输入，请手动输入内容后继续。`);
+        }
+        break;
+      }
+      
+      // 重置节点状态
       node.result = '';
       node.completed = false;
       
       // 执行当前节点
       try {
         await callAgentApi(i);
+        
+        // 检查执行是否成功
+        if (!node.completed || !node.result) {
+          console.log(`节点 ${i} 执行失败，停止自动执行`);
+          alert(`第${i + 1}个节点执行失败，停止自动执行。`);
+          break;
+        }
+        
+        console.log(`节点 ${i} 执行完成，输出:`, node.result.substring(0, 100) + '...');
+        
       } catch (error) {
         console.error(`节点 ${i} 执行失败:`, error);
-        // 可以选择继续执行后续节点或中断
-        // break; // 如果要中断执行，取消这行注释
+        alert(`第${i + 1}个节点执行失败: ${error.message}`);
+        break;
       }
       
-      // 添加短暂延迟，避免请求过于密集（可选）
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // 添加短暂延迟
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
+    
+    // 所有节点执行完成
+    if (nodes.value.every(node => node.completed)) {
+      alert('🎉 所有节点执行完成！工作流已完成。');
+    }
+    
   } finally {
     isRunning.value = false;
   }
