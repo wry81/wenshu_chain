@@ -123,9 +123,9 @@
         ></div>
       </div>
       
-      <button class="run-btn" @click="runAllNodes">
+      <button class="run-btn" @click="runAllNodes" :disabled="isAnyNodeLoading">
         <span v-if="isRunning">运行中...</span>
-        <span v-else>运行</span>
+        <span v-else>运行全部节点</span>
       </button>
 
       <button class="run-btn" @click="runCurrentNode">
@@ -308,14 +308,6 @@ const redoNode = (index) => {
   focusNode(index);
 };
 
-const redoAllNodes = () => {
-  nodes.value.forEach(node => {
-    node.result = '';
-    node.completed = false;
-  });
-  focusNode(0);
-};
-
 const downloadResult = (index) => {
   const result = nodes.value[index].result;
   if (!result) return;
@@ -404,33 +396,45 @@ const runCurrentNode = () => {
   }
 };
 
-// const runSingleNode = async (index) => {
-//   try {
-//     await callAgentApi(index);
-//     return true;
-//   } catch (error) {
-//     console.error('节点处理失败:', error);
-//     return false;
-//   }
-// };
+const isAnyNodeLoading = computed(() => {
+  return nodes.value.some(node => node.loading);
+});
 
-// const runAllNodes = async () => {
-//   isRunning.value = true;
+const runAllNodes = async () => {
+  if (isRunning.value) return; // 防止重复点击
   
-//   // 7. 优化“全部运行”逻辑，确保上一步结果能正确传递
-//   for (let i = 0; i < nodes.value.length; i++) {
-//     if (!nodes.value[i].completed) {
-//       await focusNode(i);
-//       const success = await runSingleNode(i);
-//       if (!success) {
-//         // 如果中途有节点失败，则停止执行
-//         break;
-//       }
-//     }
-//   }
+  isRunning.value = true;
   
-//   isRunning.value = false;
-// };
+  try {
+    for (let i = 0; i < nodes.value.length; i++) {
+      const node = nodes.value[i];
+      
+      // 自动聚焦到当前节点
+      await focusNode(i);
+      
+      // 跳过已完成的节点（可选，根据需求决定是否保留）
+      if (node.completed && node.result) continue;
+      
+      // 重置节点状态（可选）
+      node.result = '';
+      node.completed = false;
+      
+      // 执行当前节点
+      try {
+        await callAgentApi(i);
+      } catch (error) {
+        console.error(`节点 ${i} 执行失败:`, error);
+        // 可以选择继续执行后续节点或中断
+        // break; // 如果要中断执行，取消这行注释
+      }
+      
+      // 添加短暂延迟，避免请求过于密集（可选）
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  } finally {
+    isRunning.value = false;
+  }
+};
 
 const exitEditor = () => {
   console.log('退出编辑器');
@@ -761,7 +765,7 @@ onMounted(() => {
 
 .task-bar {
   height: 80px;
-  width: 520px;
+  width: 650px;
   background-color: #fff;
   border-radius: var(--border-radius-large);
   box-shadow: var(--box-shadow-soft);
@@ -843,10 +847,16 @@ onMounted(() => {
   background-color: #cb6666;
 }
 
+.run-btn:disabled {
+  opacity: 0.7;
+  background-color: var(--theme-color-40) !important;
+  cursor: not-allowed;
+}
+
 .image-upload-section {
   margin-bottom: 15px;
 }
-/*  */
+/* 上传图片样式 */
 .upload-area {
   width: 100%;
   height: 150px;

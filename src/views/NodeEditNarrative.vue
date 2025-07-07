@@ -772,9 +772,9 @@ onMounted(() => {
         ></div>
       </div>
       
-      <button class="run-btn" @click="runAllNodes">
+      <button class="run-btn" @click="runAllNodes" :disabled="isAnyNodeLoading">
         <span v-if="isRunning">运行中...</span>
-        <span v-else>运行</span>
+        <span v-else>运行全部节点</span>
       </button>
 
       <button class="run-btn" @click="runCurrentNode">
@@ -1044,24 +1044,45 @@ const runCurrentNode = () => {
 //     return false;
 //   }
 // };
+const isAnyNodeLoading = computed(() => {
+  return nodes.value.some(node => node.loading);
+});
 
-// const runAllNodes = async () => {
-//   isRunning.value = true;
+const runAllNodes = async () => {
+  if (isRunning.value) return; // 防止重复点击
   
-//   // 7. 优化“全部运行”逻辑，确保上一步结果能正确传递
-//   for (let i = 0; i < nodes.value.length; i++) {
-//     if (!nodes.value[i].completed) {
-//       await focusNode(i);
-//       const success = await runSingleNode(i);
-//       if (!success) {
-//         // 如果中途有节点失败，则停止执行
-//         break;
-//       }
-//     }
-//   }
+  isRunning.value = true;
   
-//   isRunning.value = false;
-// };
+  try {
+    for (let i = 0; i < nodes.value.length; i++) {
+      const node = nodes.value[i];
+      
+      // 自动聚焦到当前节点
+      await focusNode(i);
+      
+      // 跳过已完成的节点（可选，根据需求决定是否保留）
+      if (node.completed && node.result) continue;
+      
+      // 重置节点状态（可选）
+      node.result = '';
+      node.completed = false;
+      
+      // 执行当前节点
+      try {
+        await callAgentApi(i);
+      } catch (error) {
+        console.error(`节点 ${i} 执行失败:`, error);
+        // 可以选择继续执行后续节点或中断
+        // break; // 如果要中断执行，取消这行注释
+      }
+      
+      // 添加短暂延迟，避免请求过于密集（可选）
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  } finally {
+    isRunning.value = false;
+  }
+};
 
 const exitEditor = () => {
   console.log('退出编辑器');
@@ -1392,7 +1413,7 @@ onMounted(() => {
 
 .task-bar {
   height: 80px;
-  width: 520px;
+  width: 650px;
   background-color: #fff;
   border-radius: var(--border-radius-large);
   box-shadow: var(--box-shadow-soft);
@@ -1433,13 +1454,23 @@ onMounted(() => {
 }
 
 .exit-btn {
-  padding: 15px 25px;
-  border: none;
+  height: 50px;                /* 统一高度 */
+  min-width: 100px;            /* 统一最小宽度，防止竖排 */
+  padding: 0 32px;             /* 左右内边距大于上下 */
   border-radius: 16px;
+  font-size: 18px;             /* 统一字号 */
+  line-height: 50px;           /* 垂直居中 */
+  white-space: nowrap;         /* 不换行 */
+  display: inline-flex;        /* 横向排列 */
+  align-items: center;         /* 垂直居中 */
+  justify-content: center;     /* 水平居中 */
+  box-sizing: border-box;
   background-color: var(--color-divider);
   color: var(--color-text-body);
   cursor: pointer;
-  font-size: var(--font-size-body);
+  box-shadow: none !important;   /* 强制无阴影 */
+  border: none;                  /* 默认无边框 */
+  outline: none;
 }
 
 .exit-btn:hover {
@@ -1447,13 +1478,23 @@ onMounted(() => {
 }
 
 .redoall-btn {
-  padding: 15px 30px;
-  border: 1px solid var(--theme-color-60);
+  height: 50px;                /* 统一高度 */
+  min-width: 120px;            /* 统一最小宽度，防止竖排 */
+  padding: 0 32px;             /* 左右内边距大于上下 */
   border-radius: 16px;
-  background-color: #fff;
-  color: var(--theme-color-60);
+  font-size: 18px;             /* 统一字号 */
+  line-height: 50px;           /* 垂直居中 */
+  white-space: nowrap;         /* 不换行 */
+  display: inline-flex;        /* 横向排列 */
+  align-items: center;         /* 垂直居中 */
+  justify-content: center;     /* 水平居中 */
+  box-sizing: border-box;
+  background-color: var(--color-divider);
+  color: var(--color-text-body);
   cursor: pointer;
-  font-size: var(--font-size-body);
+  box-shadow: none !important;   /* 强制无阴影 */
+  border: none;                  /* 默认无边框 */
+  outline: none;
 }
 
 .redoall-btn:hover {
@@ -1472,6 +1513,12 @@ onMounted(() => {
 
 .run-btn:hover {
   background-color: #cb6666;
+}
+
+.run-btn:disabled {
+  opacity: 0.7;
+  background-color: var(--theme-color-40) !important;
+  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {

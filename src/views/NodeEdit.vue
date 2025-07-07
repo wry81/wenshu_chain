@@ -95,9 +95,13 @@
         ></div>
       </div>
       
-      <button class="run-btn" @click="runAllNodes">
+      <button 
+        class="run-btn" 
+        @click="runAllNodes"
+        :disabled="isAnyNodeLoading"
+      >
         <span v-if="isRunning">运行中...</span>
-        <span v-else>运行</span>
+        <span v-else>运行全部节点</span>
       </button>
       <button class="runCurrent-btn" @click="runCurrentNode">
         <span v-if="nodes[focusedNodeIndex].loading">运行中...</span>
@@ -334,17 +338,39 @@ const runCurrentNode = () => {
 
 // 运行所有节点
 const runAllNodes = async () => {
+  if (isRunning.value) return; // 防止重复点击
+  
   isRunning.value = true;
   
-  for (let i = 0; i < nodes.value.length; i++) {
-    if (!nodes.value[i].completed) {
+  try {
+    for (let i = 0; i < nodes.value.length; i++) {
+      const node = nodes.value[i];
+      
+      // 自动聚焦到当前节点
       await focusNode(i);
-      const success = await runSingleNode(i);
-      if (!success) break;
+      
+      // 跳过已完成的节点（可选，根据需求决定是否保留）
+      if (node.completed && node.result) continue;
+      
+      // 重置节点状态（可选）
+      node.result = '';
+      node.completed = false;
+      
+      // 执行当前节点
+      try {
+        await callAgentApi(i);
+      } catch (error) {
+        console.error(`节点 ${i} 执行失败:`, error);
+        // 可以选择继续执行后续节点或中断
+        // break; // 如果要中断执行，取消这行注释
+      }
+      
+      // 添加短暂延迟，避免请求过于密集（可选）
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
+  } finally {
+    isRunning.value = false;
   }
-  
-  isRunning.value = false;
 };
 
 // 退出编辑器
@@ -870,7 +896,11 @@ h2 {
 .run-btn:hover {
   background-color: #cb6666;
 }
-
+.run-btn:disabled {
+  opacity: 0.7;
+  background-color: var(--theme-color-40) !important;
+  cursor: not-allowed;
+}
 @media (max-width: 768px) {
   .node-card {
     width: 300px;
