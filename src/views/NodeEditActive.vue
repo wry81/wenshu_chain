@@ -125,9 +125,9 @@ let scrollTimeout = null;
 const nodes = ref([
   {
     nodeId: 'step1_decompose',
-    title: 'IP元素解构',
+    title: '文旅IP多模态创作',
     prompt: '',
-    placeholder: '深度分析现有 IP 的核心要素与市场定位，提取 DNA 级特征标签：',
+    placeholder: '融合图文问答、视觉原型、动态表情包及场景化延展的 IP 创作流程',
     result: '',
     completed: false,
     loading: false
