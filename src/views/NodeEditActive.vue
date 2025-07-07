@@ -19,6 +19,32 @@
           <template v-if="focusedNodeIndex === index">
             <div class="input-section">
               <label>输入 Prompt:</label>
+              <!-- 只在第一个节点添加图片上传 -->
+              <div v-if="index === 0" class="image-upload-section">
+                <div class="upload-area" @click="triggerFileInput">
+                  <div v-if="!uploadedImage" class="upload-placeholder">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M19 13V19H5V13H3V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V13H19ZM13 5L11.59 6.41L13.17 8H5V10H13.17L11.58 11.59L13 13L17 9L13 5Z" fill="#4A90E2"/>
+                    </svg>
+                    <p>点击上传图片</p>
+                  </div>
+                  <img v-else :src="uploadedImage" alt="上传的图片" class="preview-image">
+                  <input 
+                    type="file" 
+                    :ref="el => { if (el) fileInputs[index] = el }"
+                    accept="image/*"
+                    style="display: none"
+                    @change="handleImageUpload"
+                  >
+                </div>
+                <button 
+                  v-if="uploadedImage" 
+                  class="clear-image-btn" 
+                  @click.stop="clearUploadedImage"
+                >
+                  清除图片
+                </button>
+              </div>
               <textarea
                 v-model="node.prompt"
                 :placeholder="node.placeholder || '请输入文字'"
@@ -121,6 +147,33 @@ const textareas = ref([]);
 const nodeCards = ref([]);
 const scrollContainer = ref(null);
 let scrollTimeout = null;
+const uploadedImage = ref(null);
+const fileInputs = ref([]); // 用于存储所有文件输入
+const getFileInput = () => fileInputs.value[focusedNodeIndex.value]; // 获取当前节点的文件输入
+
+const triggerFileInput = () => {
+  const input = getFileInput();
+  if (input) input.click();
+};
+
+const handleImageUpload = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    uploadedImage.value = e.target.result;
+    nodes.value[0].prompt = `[上传图片: ${file.name}]`;
+  };
+  reader.readAsDataURL(file);
+};
+
+const clearUploadedImage = () => {
+  uploadedImage.value = null;
+  const input = getFileInput();
+  if (input) input.value = '';
+  nodes.value[0].prompt = '';
+};
 
 const nodes = ref([
   {
@@ -788,6 +841,61 @@ onMounted(() => {
 
 .run-btn:hover {
   background-color: #cb6666;
+}
+
+.image-upload-section {
+  margin-bottom: 15px;
+}
+/*  */
+.upload-area {
+  width: 100%;
+  height: 150px;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: border-color 0.3s;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.upload-area:hover {
+  border-color: #4a90e2;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #666;
+}
+
+.upload-placeholder svg {
+  margin-bottom: 8px;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.clear-image-btn {
+  padding: 6px 12px;
+  background-color: #ff4d4f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.clear-image-btn:hover {
+  background-color: #ff7875;
 }
 
 @media (max-width: 768px) {
