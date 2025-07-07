@@ -163,7 +163,12 @@ const handleImageUpload = (event) => {
   const reader = new FileReader();
   reader.onload = (e) => {
     uploadedImage.value = e.target.result;
-    nodes.value[0].prompt = `[上传图片: ${file.name}]`;
+    // 保存图片的base64数据，而不是文件名
+    nodes.value[0].imageData = e.target.result;
+    // 保持原有的prompt文本
+    if (!nodes.value[0].prompt || nodes.value[0].prompt.startsWith('[上传图片:')) {
+      nodes.value[0].prompt = '请描述这张图片的内容';
+    }
   };
   reader.readAsDataURL(file);
 };
@@ -172,6 +177,7 @@ const clearUploadedImage = () => {
   uploadedImage.value = null;
   const input = getFileInput();
   if (input) input.value = '';
+  nodes.value[0].imageData = null;
   nodes.value[0].prompt = '';
 };
 
@@ -183,7 +189,8 @@ const nodes = ref([
     placeholder: '融合图文问答、视觉原型、动态表情包及场景化延展的 IP 创作流程',
     result: '',
     completed: false,
-    loading: false
+    loading: false,
+    imageData: null
   },
   {
     nodeId: 'step2_visual_prototype',
@@ -350,16 +357,28 @@ const callAgentApi = async (nodeIndex) => {
 
   try {
     node.loading = true;
+    
+    // 构建请求体
+    let requestBody = { 
+      nodeId: node.nodeId 
+    };
+    
+    if (node.imageData) {
+      // 如果有图片数据，传递图片数据作为input，提示词作为额外参数
+      requestBody.input = node.imageData;
+      requestBody.prompt = node.prompt;
+    } else {
+      // 如果没有图片，只传递文本
+      requestBody.input = node.prompt;
+    }
+    
     const response = await fetch(`/api/agents/${agentId.value}/run`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ 
-        input: node.prompt,
-        nodeId: node.nodeId 
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {

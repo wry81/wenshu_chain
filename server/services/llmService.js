@@ -33,11 +33,34 @@ async function callLLM({ payload, prompt, model, apiUrl, apiKey, nodeType }) {
       if (key !== '_isMultipart') {
         const value = payload[key];
         if (value !== undefined && value !== null) {
-          // 对于对象类型，转换为JSON字符串
-          if (typeof value === 'object' && !Buffer.isBuffer(value)) {
-            formData.append(key, JSON.stringify(value));
+          // 特殊处理img字段：将base64转换为文件
+          if (key === 'img' && typeof value === 'string' && value.startsWith('data:image/')) {
+            try {
+              // 解析base64数据
+              const matches = value.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
+              if (matches && matches[2]) {
+                const imageType = matches[1]; // jpeg, png等
+                const base64Data = matches[2];
+                const buffer = Buffer.from(base64Data, 'base64');
+                
+                // 作为文件添加到FormData
+                formData.append('img', buffer, {
+                  filename: `image.${imageType}`,
+                  contentType: `image/${imageType}`
+                });
+              } else {
+                console.warn('[llmService] 无效的base64图片格式');
+              }
+            } catch (error) {
+              console.error('[llmService] base64图片处理失败:', error);
+            }
           } else {
-            formData.append(key, value);
+            // 其他字段正常处理
+            if (typeof value === 'object' && !Buffer.isBuffer(value)) {
+              formData.append(key, JSON.stringify(value));
+            } else {
+              formData.append(key, value);
+            }
           }
         }
       }

@@ -65,8 +65,8 @@ router.get('/', async (req, res) => {
 
 // run agent workflow (REFACTORED)
 router.post('/:id/run', auth, async (req, res) => {
-  // 主要改动点 1：从请求体中解构出 runId 和 runName
-  const { input, nodeId, runId, runName } = req.body;
+  // 主要改动点 1：从请求体中解构出 runId 和 runName，以及额外的 prompt 参数
+  const { input, nodeId, runId, runName, prompt } = req.body;
   const agentId = req.params.id;
   const userId = req.user.id;
   
@@ -77,8 +77,8 @@ router.post('/:id/run', auth, async (req, res) => {
       return res.status(403).json({ message: '访问被拒绝。您没有有效的订阅或未购买此智能体。' });
     }
 
-    // 主要改动点 2：将 runId 和 runName 传递给服务层
-    const result = await agentService.runAgent(agentId, input, nodeId, userId, runName, runId);
+    // 主要改动点 2：将 runId、runName 和 prompt 传递给服务层
+    const result = await agentService.runAgent(agentId, input, nodeId, userId, runName, runId, prompt);
     
     // 主要改动点 3：直接返回服务层的结果，其中应包含 output 和 runId
     res.json(result);

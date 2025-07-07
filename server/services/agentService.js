@@ -9,9 +9,10 @@ const { callLLM } = require('./llmService');
  * @param {number} userId - 发起运行的用户ID
  * @param {string} [runName] - (可选) 用户为新工作流定义的名称
  * @param {number} [existingRunId] - (可选) 如果是已存在的工作流，则传入其ID
+ * @param {string} [additionalPrompt] - (可选) 额外的提示词，用于多模态输入
  * @returns {Promise<object>} - 返回一个包含 { result, runId } 的对象
  */
-async function runAgent(agentId, input, nodeId, userId, runName, existingRunId) {
+async function runAgent(agentId, input, nodeId, userId, runName, existingRunId, additionalPrompt) {
   const [agentRows] = await pool.query(
     'SELECT workflow FROM wensoul_agent WHERE id = ? AND status = 1',
     [agentId]
@@ -42,8 +43,8 @@ async function runAgent(agentId, input, nodeId, userId, runName, existingRunId) 
     runId = runInsert.insertId;
   }
 
-  // 主要改动点 2：执行单个节点
-  const output = await executeNode(node, input);
+  // 主要改动点 2：执行单个节点，传递额外的提示词
+  const output = await executeNode(node, input, additionalPrompt);
 
   // 主要改动点 3：将当前节点的输入输出记录到 wensoul_agent_run_nodes 表
   await pool.query(
@@ -82,12 +83,22 @@ async function runAgent(agentId, input, nodeId, userId, runName, existingRunId) 
  * [最终版-简洁错误提示] 用于执行单个工作流节点的辅助函数
  * @param {object} node - 工作流节点对象
  * @param {any} input - 此节点的输入
+ * @param {string} [additionalPrompt] - (可选) 额外的提示词，用于多模态输入
  * @returns {Promise<string>} - 节点的输出（确保始终为字符串）
  */
-async function executeNode(node, input) {
+async function executeNode(node, input, additionalPrompt) {
   const { nodeId, nodeName, nodeType, model, promptTemplate } = node;
   const currentInput = typeof input === 'string' ? input : JSON.stringify(input);
-  const prompt = promptTemplate ? promptTemplate.replace('{{input}}', currentInput) : currentInput;
+  
+  // 优先使用传入的额外提示词，其次使用模板，最后使用输入内容
+  let prompt;
+  if (additionalPrompt) {
+    prompt = additionalPrompt;
+  } else if (promptTemplate) {
+    prompt = promptTemplate.replace('{{input}}', currentInput);
+  } else {
+    prompt = currentInput;
+  }
 
   let apiUrl;
   let payload;
@@ -114,44 +125,22 @@ async function executeNode(node, input) {
     case 'multi-to-text':
       apiUrl = process.env.I2T_API_URL;
       
-      // 处理输入内容，支持图像和文本混合
-      let messageContent;
-      
-      // 检查输入是否包含图像（Base64或URL）
+      // 根据API文档，使用multipart/form-data格式
       if (typeof currentInput === 'string' && 
           (currentInput.startsWith('data:image/') || currentInput.startsWith('http'))) {
-        // 如果输入是图像，按照官方示例格式：先text后image_url
-        messageContent = [
-          {
-            type: 'text',
-            text: prompt || '请分析这张图片'
-          },
-          {
-            type: 'image_url',
-            image_url: {
-              url: currentInput
-            }
-          }
-        ];
+        // 如果输入是图像，使用multipart格式
+        payload = {
+          prompt: prompt || '请分析这张图片',
+          img: currentInput, // 直接传递图片数据
+          _isMultipart: true // 标记使用multipart格式
+        };
       } else {
-        // 如果输入是纯文本，也使用数组格式（多模态模型要求）
-        messageContent = [
-          {
-            type: 'text',
-            text: prompt
-          }
-        ];
+        // 如果输入是纯文本，也使用multipart格式（API要求）
+        payload = {
+          prompt: prompt,
+          _isMultipart: true // 标记使用multipart格式
+        };
       }
-      
-      payload = {
-        model: 'Llama-4-Maverick-17B-128E-Instruct',
-        messages: [
-          {
-            role: 'user',
-            content: messageContent
-          }
-        ]
-      };
       break;
     case 'text-to-video':
       // 文本生成视频：先提交生成任务
@@ -194,14 +183,53 @@ async function executeNode(node, input) {
       }
     }
     else if (nodeType === 'multi-to-text') {
-      // 按照OpenAI标准格式处理返回结果
-      if (result && result.choices?.[0]?.message?.content) {
-        return result.choices[0].message.content;
+      // 处理API返回的JSON格式数据
+      if (result && typeof result === 'object') {
+        // 优先处理标准的API响应格式
+        if (result.code === 0 || result.code === '0') {
+          if (result.result && result.result.text) {
+            return result.result.text;
+          }
+          // 如果result.text不存在，尝试其他字段
+          else if (result.result && typeof result.result === 'string') {
+            return result.result;
+          }
+          // 如果result是数组格式
+          else if (Array.isArray(result.result) && result.result.length > 0) {
+            return result.result[0];
+          }
+        }
+        // 尝试直接在顶层查找text字段
+        else if (result.text) {
+          return result.text;
+        }
+        // 尝试其他可能的字段
+        else if (result.content) {
+          return result.content;
+        }
+        else if (result.response) {
+          return result.response;
+        }
+        else if (result.answer) {
+          return result.answer;
+        }
+        // 按照OpenAI标准格式处理返回结果（兼容性）
+        else if (result.choices?.[0]?.message?.content) {
+          return result.choices[0].message.content;
+        }
+        // 如果都没有，尝试直接转换为字符串
+        else {
+          console.warn('[agentService] 未能识别的multi-to-text响应格式:', result);
+          return JSON.stringify(result);
+        }
       }
-      // 如果不是标准格式，尝试其他格式
-      else if (result && (result.code === 0 || result.code === '0')
-          && Array.isArray(result.result) && result.result.length > 0) {
-        return result.result[0];
+      // 如果返回的直接是字符串
+      else if (typeof result === 'string') {
+        return result;
+      }
+      // 如果都无法处理，返回原始结果的字符串形式
+      else {
+        return String(result || '');
       }
     }
     else if (nodeType === 'text-to-video') {
@@ -370,7 +398,7 @@ async function resumeAgentRun(runId, input) {
       continue;
     }
 
-    const output = await executeNode(node, context);
+    const output = await executeNode(node, context, null);
 
     await pool.query(
       `INSERT INTO wensoul_agent_run_nodes (run_id, node_id, node_name, input, output)
