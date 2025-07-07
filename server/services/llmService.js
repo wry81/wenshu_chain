@@ -24,8 +24,29 @@ async function callLLM({ payload, prompt, model, apiUrl, apiKey, nodeType }) {
     if (payload.image) formData.append('image', payload.image);
     body = formData;
     Object.assign(headers, formData.getHeaders());
+  } else if (payload._isMultipart) {
+    // unicomiqa40B模型：使用 multipart/form-data 格式
+    const formData = new FormData();
+    
+    // 添加所有非特殊字段到FormData
+    Object.keys(payload).forEach(key => {
+      if (key !== '_isMultipart') {
+        const value = payload[key];
+        if (value !== undefined && value !== null) {
+          // 对于对象类型，转换为JSON字符串
+          if (typeof value === 'object' && !Buffer.isBuffer(value)) {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, value);
+          }
+        }
+      }
+    });
+    
+    body = formData;
+    Object.assign(headers, formData.getHeaders());
   } else {
-    // 其他模式（文本、视频、图文问答等）：JSON 传输
+    // 其他模式（文本、视频等）：JSON 传输
     headers['Content-Type'] = 'application/json';
     body = payload || {
       model: model || process.env.LLM_MODEL,

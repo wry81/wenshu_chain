@@ -114,44 +114,39 @@ async function executeNode(node, input) {
     case 'multi-to-text':
       apiUrl = process.env.I2T_API_URL;
       
-      // 处理输入内容，支持图像和文本混合
-      let messageContent;
+      // unicomiqa40B模型使用multipart/form-data格式
+      // 根据输入类型决定功能选项
+      let apiOption = 'general'; // 默认通用场景
       
-      // 检查输入是否包含图像（Base64或URL）
+      // 检查输入是否包含图像
+      let hasImage = false;
+      let imageData = null;
+      
       if (typeof currentInput === 'string' && 
           (currentInput.startsWith('data:image/') || currentInput.startsWith('http'))) {
-        // 如果输入是图像，按照官方示例格式：先text后image_url
-        messageContent = [
-          {
-            type: 'text',
-            text: prompt || '请分析这张图片'
-          },
-          {
-            type: 'image_url',
-            image_url: {
-              url: currentInput
-            }
-          }
-        ];
-      } else {
-        // 如果输入是纯文本，也使用数组格式（多模态模型要求）
-        messageContent = [
-          {
-            type: 'text',
-            text: prompt
-          }
-        ];
+        hasImage = true;
+        imageData = currentInput;
+        // 根据prompt内容智能选择功能
+        if (prompt && (prompt.includes('数学') || prompt.includes('计算') || prompt.includes('公式'))) {
+          apiOption = 'math';
+        } else if (prompt && (prompt.includes('OCR') || prompt.includes('文字识别') || prompt.includes('提取文字'))) {
+          apiOption = 'ocr';
+        }
       }
       
+      // 构建multipart/form-data格式的payload
       payload = {
-        model: 'Llama-4-Maverick-17B-128E-Instruct',
-        messages: [
-          {
-            role: 'user',
-            content: messageContent
-          }
-        ]
+        prompt: prompt || '请分析这张图片',
+        stream: 0, // 非流式
+        api_option: apiOption,
+        // 如果有图像，添加img参数
+        ...(hasImage && imageData ? { img: imageData } : {}),
+        // 如果是多轮对话，可以添加history参数
+        // history: JSON.stringify([]) // 暂时为空数组
       };
+      
+      // 标记这是multipart请求
+      payload._isMultipart = true;
       break;
     case 'text-to-video':
       // 文本生成视频：先提交生成任务
@@ -194,14 +189,22 @@ async function executeNode(node, input) {
       }
     }
     else if (nodeType === 'multi-to-text') {
-      // 按照OpenAI标准格式处理返回结果
-      if (result && result.choices?.[0]?.message?.content) {
-        return result.choices[0].message.content;
+      // unicomiqa40B模型返回格式处理
+      if (result && (result.code === 0 || result.code === '0')) {
+        // 检查不同可能的返回格式
+        if (result.data && typeof result.data === 'string') {
+          return result.data;
+        }
+        if (result.result && typeof result.result === 'string') {
+          return result.result;
+        }
+        if (Array.isArray(result.result) && result.result.length > 0) {
+          return result.result[0];
+        }
       }
-      // 如果不是标准格式，尝试其他格式
-      else if (result && (result.code === 0 || result.code === '0')
-          && Array.isArray(result.result) && result.result.length > 0) {
-        return result.result[0];
+      // 兼容原有的OpenAI格式（向后兼容）
+      else if (result && result.choices?.[0]?.message?.content) {
+        return result.choices[0].message.content;
       }
     }
     else if (nodeType === 'text-to-video') {
