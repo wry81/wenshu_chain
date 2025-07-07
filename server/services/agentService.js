@@ -175,6 +175,9 @@ async function executeNode(node, input) {
 
   try {
     const result = await callLLM({ apiUrl, payload, nodeType });
+    
+    // 添加调试日志，记录API返回的完整结果
+    console.log(`[agentService] 节点'${nodeName}'(${nodeType})的API返回结果:`, JSON.stringify(result, null, 2));
 
     // 检查并格式化成功返回
     if (nodeType === 'text-to-text') {
@@ -202,28 +205,108 @@ async function executeNode(node, input) {
       }
     }
     else if (nodeType === 'text-to-video') {
-      // 异步流程：先返回 videoId，再去取最终视频链接
-      if (result && (result.code === 0 || result.code === '0') && result.videoId) {
-        const fetchResult = await callLLM({
-          apiUrl: process.env.T2V_GET_URL,
-          payload: { videoId: result.videoId },
-          nodeType: 'text-to-video'
-        });
-        if (fetchResult && (fetchResult.code === 0 || fetchResult.code === '0') && fetchResult.url) {
-          return fetchResult.url;
+      // 处理文本生成视频的返回结果
+      if (result && (result.code === 0 || result.code === '0')) {
+        // 检查不同可能的返回格式
+        if (result.data) {
+          // 如果直接返回视频文件名或URL
+          if (typeof result.data === 'string') {
+            // 检查是否为完整URL
+            if (result.data.startsWith('http')) {
+              return result.data;
+            } else {
+              // 如果是文件名，需要构建完整URL
+              const baseUrl = process.env.T2V_API_URL || 'https://your-video-service.com/videos/';
+              return `${baseUrl}${result.data}`;
+            }
+          }
+        }
+        
+        // 检查resourceId字段
+        if (result.resourceId) {
+          // 如果返回resourceId，可能需要进一步查询
+          if (result.resourceId.startsWith('http')) {
+            return result.resourceId;
+          } else {
+            // 构建完整URL
+            const baseUrl = process.env.T2V_API_URL || 'https://your-video-service.com/videos/';
+            return `${baseUrl}${result.resourceId}`;
+          }
+        }
+        
+        // 如果有videoId，使用原有的异步查询逻辑
+        if (result.videoId) {
+          const fetchResult = await callLLM({
+            apiUrl: process.env.T2V_GET_URL,
+            payload: { videoId: result.videoId },
+            nodeType: 'text-to-video'
+          });
+          if (fetchResult && (fetchResult.code === 0 || fetchResult.code === '0') && fetchResult.url) {
+            return fetchResult.url;
+          }
+        }
+        
+        // 如果有url字段，直接返回
+        if (result.url) {
+          return result.url;
+        }
+        
+        // 如果result本身就是视频URL字符串
+        if (typeof result === 'string' && (result.startsWith('http') || result.endsWith('.mp4'))) {
+          return result;
         }
       }
     }
     else if (nodeType === 'image-to-video') {
-      // 异步流程：先返回 videoId，再去取最终视频链接
-      if (result && (result.code === 0 || result.code === '0') && result.videoId) {
-        const fetchResult = await callLLM({
-          apiUrl: process.env.I2T_GET_URL,
-          payload: { videoId: result.videoId },
-          nodeType: 'image-to-video'
-        });
-        if (fetchResult && (fetchResult.code === 0 || fetchResult.code === '0') && fetchResult.url) {
-          return fetchResult.url;
+      // 处理图像生成视频的返回结果
+      if (result && (result.code === 0 || result.code === '0')) {
+        // 检查不同可能的返回格式
+        if (result.data) {
+          // 如果直接返回视频文件名或URL
+          if (typeof result.data === 'string') {
+            // 检查是否为完整URL
+            if (result.data.startsWith('http')) {
+              return result.data;
+            } else {
+              // 如果是文件名，需要构建完整URL
+              const baseUrl = process.env.I2V_API_URL || 'https://your-video-service.com/videos/';
+              return `${baseUrl}${result.data}`;
+            }
+          }
+        }
+        
+        // 检查resourceId字段
+        if (result.resourceId) {
+          // 如果返回resourceId，可能需要进一步查询
+          if (result.resourceId.startsWith('http')) {
+            return result.resourceId;
+          } else {
+            // 构建完整URL
+            const baseUrl = process.env.I2V_API_URL || 'https://your-video-service.com/videos/';
+            return `${baseUrl}${result.resourceId}`;
+          }
+        }
+        
+        // 如果有videoId，使用原有的异步查询逻辑
+        if (result.videoId) {
+          const fetchResult = await callLLM({
+            apiUrl: process.env.I2V_GET_URL,
+            payload: { videoId: result.videoId },
+            nodeType: 'image-to-video'
+          });
+          if (fetchResult && (fetchResult.code === 0 || fetchResult.code === '0') && fetchResult.url) {
+            return fetchResult.url;
+          }
+        }
+        
+        // 如果有url字段，直接返回
+        if (result.url) {
+          return result.url;
+        }
+        
+        // 如果result本身就是视频URL字符串
+        if (typeof result === 'string' && (result.startsWith('http') || result.endsWith('.mp4'))) {
+          return result;
         }
       }
     }
