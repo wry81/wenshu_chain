@@ -216,7 +216,7 @@ async function executeNode(node, input) {
               return result.data;
             } else {
               // 如果是文件名，需要构建完整URL
-              const baseUrl = process.env.T2V_API_URL || 'https://your-video-service.com/videos/';
+              const baseUrl = process.env.T2V_API_URL;
               return `${baseUrl}${result.data}`;
             }
           }
@@ -229,7 +229,7 @@ async function executeNode(node, input) {
             return result.resourceId;
           } else {
             // 构建完整URL
-            const baseUrl = process.env.T2V_API_URL || 'https://your-video-service.com/videos/';
+            const baseUrl = process.env.T2V_API_URL;
             return `${baseUrl}${result.resourceId}`;
           }
         }
@@ -269,7 +269,7 @@ async function executeNode(node, input) {
               return result.data;
             } else {
               // 如果是文件名，需要构建完整URL
-              const baseUrl = process.env.I2V_API_URL || 'https://your-video-service.com/videos/';
+              const baseUrl = process.env.I2V_API_URL;
               return `${baseUrl}${result.data}`;
             }
           }
@@ -282,7 +282,7 @@ async function executeNode(node, input) {
             return result.resourceId;
           } else {
             // 构建完整URL
-            const baseUrl = process.env.I2V_API_URL || 'https://your-video-service.com/videos/';
+            const baseUrl = process.env.I2V_API_URL;
             return `${baseUrl}${result.resourceId}`;
           }
         }

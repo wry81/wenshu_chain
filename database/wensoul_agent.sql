@@ -97,7 +97,7 @@ INSERT INTO `wensoul_agent` (`agent_name`, `agent_description`, `workflow`) VALU
     "nodeId": "step1_decompose",
     "nodeName": "IP元素解构",
     "nodeType": "multi-to-text",
-    "model": "Llama-4-Maverick-17B-128E-Instruct",
+    "model": "unicomiqa40B",
     "promptTemplate": "深度分析现有 IP 的核心要素与市场定位，提取 DNA 级特征标签：\\n\\n{{input}}"
   },
   {
