@@ -35,7 +35,90 @@
                 <p>正在生成结果，请稍候...</p>
                 <div class="spinner"></div>
               </div>
-              <div v-else-if="node.result" class="output-content" v-html="marked(node.result)"></div>
+              <template v-else-if="node.result">
+                 <div v-if="isImageUrl(node.result)" class="result-image-container">
+                  <img :src="node.result" alt="AI生成结果" class="result-image">
+                </div>
+                 <div v-else-if="isAsyncTask(node.result)" class="result-async-task-container">
+                  <div class="async-task-preview">
+                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="32" cy="32" r="24" stroke="#4A90E2" stroke-width="2" fill="none"/>
+                      <path d="M32 16v16l12 8" stroke="#4A90E2" stroke-width="2" fill="none"/>
+                    </svg>
+                    <div class="async-task-info">
+                      <pre>{{ node.result }}</pre>
+                    </div>
+                    <div class="async-task-actions">
+                      <button 
+                        class="task-status-btn" 
+                        @click="checkTaskStatus(index)"
+                        :disabled="node.checkingStatus"
+                      >
+                        <span v-if="node.checkingStatus">查询中...</span>
+                        <span v-else>查询状态</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                 <div v-else-if="isCompleted3DTask(node.result)" class="result-completed-3d-container">
+                  <div class="completed-3d-preview">
+                    <!-- 显示缩略图 -->
+                    <div class="thumbnail-container" v-if="JSON.parse(node.result).thumbnailUrl">
+                      <img 
+                        :src="JSON.parse(node.result).thumbnailUrl" 
+                        alt="3D模型预览"
+                        class="thumbnail-image"
+                        @error="onThumbnailError"
+                      >
+                      <div class="thumbnail-overlay">
+                        <svg width="32" height="32" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M32 8L56 20V44L32 56L8 44V20L32 8Z" stroke="#ffffff" stroke-width="2" fill="none"/>
+                          <path d="M32 8V32L56 20" stroke="#ffffff" stroke-width="2" fill="none"/>
+                          <path d="M32 32L8 20" stroke="#ffffff" stroke-width="2" fill="none"/>
+                          <path d="M32 32V56" stroke="#ffffff" stroke-width="2" fill="none"/>
+                        </svg>
+                      </div>
+                    </div>
+                    
+                    <!-- 3D模型信息 -->
+                    <div class="model-info">
+                      <h3>✅ 3D模型生成完成</h3>
+                      <p>{{ JSON.parse(node.result).message }}</p>
+                      
+                      <!-- 操作按钮 -->
+                      <div class="model-actions">
+                        <button 
+                          class="download-model-btn"
+                          @click="downloadModel(JSON.parse(node.result).modelUrl)"
+                          v-if="JSON.parse(node.result).modelUrl"
+                        >
+                          📦 下载3D模型
+                        </button>
+                        <button 
+                          class="download-thumbnail-btn"
+                          @click="downloadThumbnail(JSON.parse(node.result).thumbnailUrl)"
+                          v-if="JSON.parse(node.result).thumbnailUrl"
+                        >
+                          🖼️ 下载预览图
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                 <div v-else-if="isModelUrl(node.result)" class="result-model-container">
+                  <div class="model-preview">
+                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M32 8L56 20V44L32 56L8 44V20L32 8Z" stroke="#4A90E2" stroke-width="2" fill="none"/>
+                      <path d="M32 8V32L56 20" stroke="#4A90E2" stroke-width="2" fill="none"/>
+                      <path d="M32 32L8 20" stroke="#4A90E2" stroke-width="2" fill="none"/>
+                      <path d="M32 32V56" stroke="#4A90E2" stroke-width="2" fill="none"/>
+                    </svg>
+                    <p>3D模型已生成</p>
+                    <a :href="node.result" target="_blank" class="model-link">查看/下载模型</a>
+                  </div>
+                </div>
+                 <div v-else class="output-content" v-html="marked(node.result)"></div>
+              </template>
               <p v-else class="no-result">点击"运行"按钮获取AI结果</p>
             </div>
 
@@ -131,7 +214,9 @@ const nodes = ref([
     placeholder: '请根据以下市场信息，分析其主要趋势、机遇和挑战：',
     result: '',
     completed: false,
-    loading: false
+    loading: false,
+    imageData: null,
+    checkingStatus: false
   },
   {
     nodeId: 'step2_social_analysis',
@@ -140,7 +225,8 @@ const nodes = ref([
     placeholder: '社交媒体热点词汇抓取与分析...',
     result: '',
     completed: false,
-    loading: false
+    loading: false,
+    checkingStatus: false
   },
   {
     nodeId: 'step3_competitor_research',
@@ -149,16 +235,19 @@ const nodes = ref([
     placeholder: '请输入竞品...',
     result: '',
     completed: false,
-    loading: false
+    loading: false,
+    imageData: null,
+    checkingStatus: false
   },
   {
-    nodeId: 'step4_challenge_opportunity',
-    title: '现状挑战与机遇',
+    nodeId: 'step4_scenario_extension',
+    title: '场景化延展',
     prompt: '',
-    placeholder: '请输入内容...',
+    placeholder: '生成 IP 在不同场景的应用效果图：周边产品/海报/社交媒体模板等',
     result: '',
     completed: false,
-    loading: false
+    loading: false,
+    checkingStatus: false
   },
   {
     nodeId: 'step5_doc_generation',
@@ -167,7 +256,8 @@ const nodes = ref([
     placeholder: '请输入总结内容...',
     result: '',
     completed: false,
-    loading: false
+    loading: false,
+    checkingStatus: false
   }
 ]);
 
@@ -193,8 +283,101 @@ const trackStyle = computed(() => {
   };
 });
 
-// 滚动到指定节点
-// 修改scrollToNode方法
+
+// 3. 添加辅助函数来判断结果类型
+const isImageUrl = (text) => {
+  // 这是一个简单的判断，可以根据实际返回的URL格式进行调整
+  return typeof text === 'string' && (text.startsWith('http') || text.startsWith('data:image'));
+};
+
+// 添加异步任务识别函数
+const isAsyncTask = (text) => {
+  if (typeof text !== 'string') return false;
+  
+  // 检查是否包含异步任务的标识符
+  if (text.includes('🔄') && text.includes('任务ID')) {
+    return true;
+  }
+  
+  // 检查是否为JSON格式的异步任务信息
+  try {
+    const parsed = JSON.parse(text);
+    return parsed.type === 'async_task' || parsed.task_id;
+  } catch (e) {
+    return false;
+  }
+};
+
+// 添加完成的3D任务识别函数
+const isCompleted3DTask = (text) => {
+  if (typeof text !== 'string') return false;
+  
+  try {
+    const parsed = JSON.parse(text);
+    return parsed.type === 'completed_3d_task';
+  } catch (e) {
+    return false;
+  }
+};
+
+// 添加3D模型识别函数
+const isModelUrl = (text) => {
+  // 如果是异步任务或完成的3D任务，不认为是普通模型URL
+  if (isAsyncTask(text) || isCompleted3DTask(text)) {
+    return false;
+  }
+  
+  return typeof text === 'string' && (
+    text.includes('.glb') || 
+    text.includes('.obj') || 
+    text.includes('.fbx') ||
+    (text.startsWith('http') && (text.includes('model') || text.includes('3d')))
+  );
+};
+
+// 将后端返回的数据统一解析为可用的字符串（DataURL / URL / Markdown）
+const normalizeApiResult = (apiData) => {
+  if (!apiData) return '';
+
+  // 1) 兼容常见字段名：result 或 data
+  let raw = apiData.result ?? apiData.data ?? '';
+
+  // 2) 若为数组则取第一项
+  if (Array.isArray(raw)) {
+    raw = raw[0] ?? '';
+  }
+
+  // 3) 确保最终是字符串
+  if (typeof raw !== 'string') {
+    raw = String(raw);
+  }
+
+  // 4) 检查是否为异步任务信息（JSON字符串）
+  if (raw.startsWith('{') && raw.includes('async_task')) {
+    try {
+      const taskInfo = JSON.parse(raw);
+      if (taskInfo.type === 'async_task') {
+        return `🔄 ${taskInfo.message}\n\n📋 任务ID: ${taskInfo.task_id}\n📡 状态: ${taskInfo.status}\n\n💡 ${taskInfo.note || '3D模型生成通常需要1-5分钟，请耐心等待。'}\n\n⚠️ 注意：监控端点需要API密钥认证，不能直接在浏览器中访问。`;
+      }
+    } catch (e) {
+      console.warn('解析异步任务信息失败:', e);
+    }
+  }
+
+  // 5) 已是 URL 或 Data-URL，直接返回
+  if (raw.startsWith('http') || raw.startsWith('data:image')) {
+    return raw;
+  }
+
+  // 6) 裸 Base64（JPEG 通常以 /9j/ 开头）→ 转为 Data-URL
+  if (/^\/9j/.test(raw) || /^[A-Za-z0-9+/]+=*$/.test(raw)) {
+    return `data:image/jpeg;base64,${raw}`;
+  }
+
+  // 7) 其它情况视为普通文本 / Markdown
+  return raw;
+};
+
 const scrollToNode = (index) => {
   nextTick(() => {
     const container = scrollContainer.value;
@@ -241,6 +424,8 @@ const focusNextNode = () => {
   }
 };
 
+
+
 // 重做当前节点
 const redoNode = (index) => {
   nodes.value[index].result = '';
@@ -248,29 +433,112 @@ const redoNode = (index) => {
   focusNode(index);
 };
 
-// 重做所有节点
-const redoAllNodes = () => {
-  nodes.value.forEach(node => {
-    node.result = '';
-    node.completed = false;
-  });
-  focusNode(0);
+
+// 下载3D模型文件
+const downloadModel = (modelUrl) => {
+  if (!modelUrl) return;
+  
+  const link = document.createElement('a');
+  link.href = modelUrl;
+  
+  // 从URL中提取文件扩展名
+  const extension = modelUrl.includes('.glb') ? '.glb' : 
+                   modelUrl.includes('.obj') ? '.obj' : 
+                   modelUrl.includes('.fbx') ? '.fbx' : '.glb';
+  
+  link.download = `3D模型${extension}`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 };
+
+// 下载缩略图
+const downloadThumbnail = (thumbnailUrl) => {
+  if (!thumbnailUrl) return;
+  
+  const link = document.createElement('a');
+  link.href = thumbnailUrl;
+  
+  // 从URL中提取文件扩展名
+  const extension = thumbnailUrl.includes('.webp') ? '.webp' : 
+                   thumbnailUrl.includes('.png') ? '.png' : 
+                   thumbnailUrl.includes('.jpg') ? '.jpg' : '.webp';
+  
+  link.download = `3D模型预览图${extension}`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+// 缩略图加载错误处理
+const onThumbnailError = (event) => {
+  console.warn('缩略图加载失败:', event.target.src);
+  // 可以设置一个默认图片或者隐藏图片
+  event.target.style.display = 'none';
+};
+
 
 // 下载节点结果
 const downloadResult = (index) => {
   const result = nodes.value[index].result;
   if (!result) return;
   
-  const blob = new Blob([result], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `节点${index + 1}_结果.txt`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  if (isImageUrl(result)) {
+    // 下载图片
+    const link = document.createElement('a');
+    link.href = result;
+    link.download = `节点${index + 1}_结果.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } else if (isCompleted3DTask(result)) {
+    // 完成的3D任务：下载模型文件
+    try {
+      const taskData = JSON.parse(result);
+      if (taskData.modelUrl) {
+        downloadModel(taskData.modelUrl);
+      } else {
+        alert('没有找到可下载的3D模型文件');
+      }
+    } catch (e) {
+      console.error('解析3D任务结果失败:', e);
+      alert('解析任务结果失败');
+    }
+  } else if (isAsyncTask(result)) {
+    // 下载异步任务信息
+    const blob = new Blob([result], { type: 'text/plain; charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `节点${index + 1}_任务信息.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } else if (isModelUrl(result)) {
+    // 下载3D模型
+    const link = document.createElement('a');
+    link.href = result;
+    // 从URL中提取文件扩展名
+    const extension = result.includes('.glb') ? '.glb' : 
+                     result.includes('.obj') ? '.obj' : 
+                     result.includes('.fbx') ? '.fbx' : '.glb';
+    link.download = `节点${index + 1}_3D模型${extension}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } else {
+    // 下载文本
+    const blob = new Blob([result], { type: 'text/plain; charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `节点${index + 1}_结果.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 };
 
 // 调用后端API
@@ -306,9 +574,11 @@ const callAgentApi = async (nodeIndex) => {
     }
     
     const data = await response.json();
-    node.result = data.result || JSON.stringify(data);
+    const resultToShow = normalizeApiResult(data);
+    node.result = resultToShow;
+
     node.completed = true;
-    return true;
+
   } catch (error) {
     node.result = `错误: ${error.message}`;
     throw error;
@@ -317,16 +587,150 @@ const callAgentApi = async (nodeIndex) => {
   }
 };
 
-// 运行单个节点
-const runSingleNode = async (index) => {
+// 查询异步任务状态
+const checkTaskStatus = async (nodeIndex) => {
+  const node = nodes.value[nodeIndex];
+  const token = localStorage.getItem('token');
+  
+  if (!token) {
+    alert('请先登录');
+    return;
+  }
+  
+  if (!isAsyncTask(node.result)) {
+    alert('这不是一个异步任务');
+    return;
+  }
+  
   try {
-    await callAgentApi(index);
-    return true;
+    // 从结果中提取任务ID - 支持多种格式
+    let taskId = null;
+    
+    // 尝试从JSON格式提取
+    try {
+      const parsed = JSON.parse(node.result);
+      if (parsed.task_id) {
+        taskId = parsed.task_id;
+      }
+    } catch (e) {
+      // 如果不是JSON，尝试从文本中提取
+      const taskIdMatch = node.result.match(/任务ID:\s*([a-f0-9-]+)/i) || 
+                          node.result.match(/task_id[:"'\s]*([a-f0-9-]+)/i);
+      if (taskIdMatch) {
+        taskId = taskIdMatch[1];
+      }
+    }
+    
+    if (!taskId) {
+      alert('无法找到任务ID');
+      console.log('node.result内容:', node.result);
+      return;
+    }
+    
+    console.log('查询任务状态，任务ID:', taskId);
+    
+    node.checkingStatus = true;
+    
+    const response = await fetch(`/api/agents/task/${taskId}/status`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || '查询状态失败');
+    }
+    
+    const statusData = await response.json();
+    console.log('任务状态查询结果:', statusData);
+    
+    // 更新节点结果显示
+    if (statusData.success) {
+      let statusMessage = `🔄 任务状态更新\n\n📋 任务ID: ${statusData.taskId}\n📡 状态: ${statusData.status}\n💬 消息: ${statusData.message}`;
+      
+      if (statusData.progress > 0) {
+        statusMessage += `\n📊 进度: ${statusData.progress}%`;
+      }
+      
+
+      
+      if (statusData.status === 'success' && statusData.result) {
+        statusMessage += `\n\n✅ 任务已完成！`;
+        
+        // 解析Tripo3D API的结果格式
+        let modelUrl = null;
+        let thumbnailUrl = null;
+        
+        if (statusData.result) {
+          // 提取3D模型URL
+          if (statusData.result.pbr_model && statusData.result.pbr_model.url) {
+            modelUrl = statusData.result.pbr_model.url;
+          } else if (statusData.result.model && statusData.result.model.urls) {
+            modelUrl = statusData.result.model.urls.glb || statusData.result.model.urls.obj;
+          } else if (statusData.result.urls) {
+            modelUrl = statusData.result.urls.glb || statusData.result.urls.obj;
+          } else if (statusData.result.glb_url) {
+            modelUrl = statusData.result.glb_url;
+          } else if (statusData.result.obj_url) {
+            modelUrl = statusData.result.obj_url;
+          } else if (typeof statusData.result === 'string' && statusData.result.startsWith('http')) {
+            modelUrl = statusData.result;
+          }
+          
+          // 提取缩略图URL
+          if (statusData.result.rendered_image && statusData.result.rendered_image.url) {
+            thumbnailUrl = statusData.result.rendered_image.url;
+          } else if (statusData.result.thumbnail) {
+            thumbnailUrl = statusData.result.thumbnail;
+          }
+        }
+        
+        if (modelUrl || thumbnailUrl) {
+          // 创建一个包含所有信息的特殊结果格式，用于漂亮的UI显示
+          const resultData = {
+            type: 'completed_3d_task',
+            modelUrl: modelUrl,
+            thumbnailUrl: thumbnailUrl,
+            taskId: statusData.taskId,
+            message: '3D模型生成完成'
+          };
+          
+          // 直接设置为JSON格式，触发特殊UI显示
+          node.result = JSON.stringify(resultData);
+          return; // 重要：直接返回，不执行后面的statusMessage覆盖逻辑
+        } else {
+          statusMessage += `\n📄 结果数据: ${JSON.stringify(statusData.result)}`;
+        }
+      } else if (statusData.status === 'failed' || statusData.status === 'error') {
+        statusMessage += `\n\n❌ 任务失败`;
+        if (statusData.error) {
+          statusMessage += `\n🔥 错误: ${statusData.error}`;
+        }
+      }
+      
+      // 如果任务仍在进行中，保持异步任务格式
+      if (statusData.status === 'queued' || statusData.status === 'running' || statusData.status === 'processing') {
+        node.result = statusMessage;
+      } else {
+        // 任务完成或失败，更新result（但成功的3D任务已经在上面处理并返回了）
+        node.result = statusMessage;
+      }
+      
+    } else {
+      alert(`查询失败: ${statusData.message}`);
+    }
+    
   } catch (error) {
-    console.error('节点处理失败:', error);
-    return false;
+    console.error('查询任务状态失败:', error);
+    alert(`查询失败: ${error.message}`);
+  } finally {
+    node.checkingStatus = false;
   }
 };
+
 
 // 仅运行当前聚焦的节点
 const runCurrentNode = () => {
@@ -698,6 +1102,135 @@ h2 {
   text-align: center;
   margin-top: 20px;
 }
+.result-image-container {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 6px;
+  background: transparent;
+}
+
+.result-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.result-model-container {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 6px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+}
+
+.model-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.model-preview p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.model-link {
+  color: #4A90E2;
+  text-decoration: none;
+  font-size: 14px;
+  padding: 6px 12px;
+  border: 1px solid #4A90E2;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.model-link:hover {
+  background-color: #4A90E2;
+  color: white;
+}
+
+
+.result-async-task-container {
+  width: 100%;
+  min-height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 6px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  padding: 20px;
+}
+
+.async-task-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+}
+
+.async-task-info {
+  width: 100%;
+  text-align: center;
+}
+
+.async-task-info pre {
+  background-color: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  padding: 15px;
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+  text-align: left;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-x: auto;
+}
+
+.async-task-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.task-status-btn {
+  padding: 8px 16px;
+  border: 1px solid #4A90E2;
+  border-radius: 4px;
+  background-color: #fff;
+  color: #4A90E2;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.task-status-btn:hover:not(:disabled) {
+  background-color: #4A90E2;
+  color: white;
+}
+
+.task-status-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.task-status-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 .output-content {
   /* background: #f7f7f7; */
@@ -770,6 +1303,309 @@ h2 {
   100% { transform: rotate(360deg); }
 }
 
+.node-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1; /* 确保在内容之上 */
+}
+
+.redo-btn{
+  padding: 8px 40px;
+  border: none;
+  border-radius: 999px;
+  background-color: var(--color-divider);
+  color: var(--color-text-body);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+}
+
+.redo-btn:hover {
+  background-color: var(--color-neutral-light-gray);
+}
+
+.download-btn{
+  padding: 8px 40px;
+  border: 1px solid var(--theme-color-60);
+  border-radius: 999px;
+  background-color: #fff;
+  color: var(--theme-color-60);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+}
+
+.download-btn:hover {
+  background-color: var(--theme-color-20);
+}
+
+.continue-btn{
+  padding: 8px 40px;
+  border: none;
+  border-radius: 999px;
+  background-color: var(--theme-color-60);
+  color: #fff;
+  cursor: pointer;
+  font-size: var(--font-size-body);
+}
+
+.continue-btn:hover{
+  background-color: #cb6666;
+}
+
+.task-bar {
+  height: 80px;
+  width: 650px;
+  background-color: #fff;
+  border-radius: var(--border-radius-large);
+  box-shadow: var(--box-shadow-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 30px;
+  gap: 20px;
+  flex-shrink: 0;
+  margin: 20px auto 0;
+}
+
+.progress-indicator {
+  display: flex;
+  gap: 15px;
+}
+
+.progress-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #D9D9D9;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.progress-dot:hover {
+  transform: scale(1.2);
+}
+
+.active-dot {
+  background-color: #013E77;
+  transform: scale(1.5);
+}
+
+.completed-dot {
+  background-color: #11C31D;
+}
+
+.exit-btn {
+  padding: 15px 25px;
+  border: none;
+  border-radius: 16px;
+  background-color: var(--color-divider);
+  color: var(--color-text-body);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+}
+
+.exit-btn:hover {
+  background-color: var(--color-neutral-light-gray);
+}
+
+.redoall-btn {
+  padding: 15px 30px;
+  border: 1px solid var(--theme-color-60);
+  border-radius: 16px;
+  background-color: #fff;
+  color: var(--theme-color-60);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+}
+
+.redoall-btn:hover {
+  background-color: var(--theme-color-20);
+}
+
+.run-btn {
+  padding: 15px 40px;
+  border: none;
+  border-radius: 16px;
+  background-color: var(--theme-color-60);
+  color: #fff;
+  cursor: pointer;
+  font-size: var(--font-size-body);
+}
+
+.run-btn:hover {
+  background-color: #cb6666;
+}
+
+.run-btn:disabled {
+  opacity: 0.7;
+  background-color: var(--theme-color-40) !important;
+  cursor: not-allowed;
+}
+
+.image-upload-section {
+  margin-bottom: 15px;
+}
+/* 上传图片样式 */
+.upload-area {
+  width: 100%;
+  height: 150px;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: border-color 0.3s;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.upload-area:hover {
+  border-color: #4a90e2;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #666;
+}
+
+.upload-placeholder svg {
+  margin-bottom: 8px;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.clear-image-btn {
+  padding: 6px 12px;
+  background-color: #ff4d4f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.clear-image-btn:hover {
+  background-color: #ff7875;
+}
+
+/* 完成的3D任务样式 */
+.result-completed-3d-container {
+  border-radius: 8px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  margin-bottom: 15px;
+}
+
+.completed-3d-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 20px;
+}
+
+.thumbnail-container {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.thumbnail-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+.thumbnail-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.model-info {
+  text-align: center;
+}
+
+.model-info h3 {
+  color: #2c3e50;
+  margin: 0 0 10px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.model-info p {
+  color: #5a6c7d;
+  margin: 0 0 20px 0;
+  font-size: 14px;
+}
+
+.model-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.download-model-btn,
+.download-thumbnail-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.download-model-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.download-model-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.download-thumbnail-btn {
+  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  color: #8b4513;
+  box-shadow: 0 4px 15px rgba(252, 182, 159, 0.4);
+}
+
+.download-thumbnail-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(252, 182, 159, 0.6);
+}
+
 @media (max-width: 768px) {
   .node-card {
     width: 300px;
@@ -789,6 +1625,18 @@ h2 {
     padding: 40px calc(50% - 150px); /* 小屏幕调整 */
     align-items: flex-start; /* 顶部对齐 */
   }
+  
+  .model-actions {
+    flex-direction: column;
+  }
+  
+  .download-model-btn,
+  .download-thumbnail-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  
 }
 
 </style>
