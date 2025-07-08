@@ -5,6 +5,7 @@
         <img src="../assets/logo.png" alt="文枢链 Logo" class="app-logo" />
       </div>
       <h1>文枢链</h1>
+      <p class="Engtitle">WensoulChain</p>
       <p class="subtitle">AI语义驱动文档设计云平台</p>
       <p class="copyright">‌©版权所有：嘉善文枢智创科技有限公司 2025</p>
     </div>
@@ -98,8 +99,10 @@ export default {
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
-  background: linear-gradient(-33deg, #D33A3A, #87271E);
+  background-image: url('../assets/loginbg.png');
   position: relative;
+  background-size: cover; /* 确保图片覆盖整个容器 */
+  background-repeat: no-repeat; /* 防止图片重复 */
 }
 
 /* Logo 容器和图片样式 */
@@ -125,12 +128,20 @@ export default {
 .login-left h1 {
   font-size: 40px;
   margin: 0 0 8px;
-  font-weight: 700;
+  font-weight: 900;
   color: #fff;
 }
 
 .login-left .subtitle {
   font-size: 14px;
+  font-weight: 600;
+  margin: 8px 0;
+  color: #fff;
+}
+
+.login-left .Engtitle{
+  font-size: 20px;
+  font-weight: 600;
   margin: 0;
   color: #fff;
 }
@@ -139,7 +150,8 @@ export default {
   position: absolute;
   bottom: 40px; /* 调整为 20px */
   left: 100px;
-  font-size: 12px;
+  font-size: 14px;
+  font-weight: 600;
   color: #fff;
 }
 
