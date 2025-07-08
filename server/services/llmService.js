@@ -16,7 +16,27 @@ async function callLLM({ payload, prompt, model, apiUrl, apiKey, nodeType }) {
     Authorization: `Bearer ${finalApiKey}`
   };
 
-  if (nodeType === 'text-to-image' || nodeType === 'image-to-image') {
+  if (nodeType === 'image-to-model') {
+    // 3D模型生成：使用特殊的API key和JSON格式
+    const tripoApiKey = process.env.TRIPO_API_KEY;
+    if (!tripoApiKey) {
+      throw new Error('TRIPO API key not configured');
+    }
+    
+    headers.Authorization = `Bearer ${tripoApiKey}`;
+    headers['Content-Type'] = 'application/json';
+    
+    // 处理图片数据：如果是base64格式，需要转换为file_token
+    if (payload.file && payload.file.file_token) {
+      if (typeof payload.file.file_token === 'string' && payload.file.file_token.startsWith('data:image/')) {
+        // 这里需要先上传图片获取file_token，暂时直接使用base64
+        // 实际应用中可能需要先调用上传API获取token
+        console.log('[llmService] 处理image-to-model的base64图片数据');
+      }
+    }
+    
+    body = payload;
+  } else if (nodeType === 'text-to-image' || nodeType === 'image-to-image') {
     // 生成图像或图转图：使用 FormData
     const formData = new FormData();
     if (payload.prompt) formData.append('prompt', payload.prompt);

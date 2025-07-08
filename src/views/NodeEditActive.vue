@@ -19,28 +19,28 @@
           <template v-if="focusedNodeIndex === index">
             <div class="input-section">
               <label>输入 Prompt:</label>
-              <!-- 只在第一个节点添加图片上传 -->
-              <div v-if="index === 0" class="image-upload-section">
+              <!-- 在第一个节点和第三个节点添加图片上传 -->
+              <div v-if="index === 0 || index === 2" class="image-upload-section">
                 <div class="upload-area" @click="triggerFileInput">
-                  <div v-if="!uploadedImage" class="upload-placeholder">
+                  <div v-if="!node.imageData" class="upload-placeholder">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M19 13V19H5V13H3V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V13H19ZM13 5L11.59 6.41L13.17 8H5V10H13.17L11.58 11.59L13 13L17 9L13 5Z" fill="#4A90E2"/>
                     </svg>
                     <p>点击上传图片</p>
                   </div>
-                  <img v-else :src="uploadedImage" alt="上传的图片" class="preview-image">
+                  <img v-else :src="node.imageData" alt="上传的图片" class="preview-image">
                   <input 
                     type="file" 
                     :ref="el => { if (el) fileInputs[index] = el }"
                     accept="image/*"
                     style="display: none"
-                    @change="handleImageUpload"
+                    @change="(event) => handleImageUpload(event, index)"
                   >
                 </div>
                 <button 
-                  v-if="uploadedImage" 
+                  v-if="node.imageData" 
                   class="clear-image-btn" 
-                  @click.stop="clearUploadedImage"
+                  @click.stop="clearUploadedImage(index)"
                 >
                   清除图片
                 </button>
@@ -64,6 +64,18 @@
               <template v-else-if="node.result">
                  <div v-if="isImageUrl(node.result)" class="result-image-container">
                   <img :src="node.result" alt="AI生成结果" class="result-image">
+                </div>
+                 <div v-else-if="isModelUrl(node.result)" class="result-model-container">
+                  <div class="model-preview">
+                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M32 8L56 20V44L32 56L8 44V20L32 8Z" stroke="#4A90E2" stroke-width="2" fill="none"/>
+                      <path d="M32 8V32L56 20" stroke="#4A90E2" stroke-width="2" fill="none"/>
+                      <path d="M32 32L8 20" stroke="#4A90E2" stroke-width="2" fill="none"/>
+                      <path d="M32 32V56" stroke="#4A90E2" stroke-width="2" fill="none"/>
+                    </svg>
+                    <p>3D模型已生成</p>
+                    <a :href="node.result" target="_blank" class="model-link">查看/下载模型</a>
+                  </div>
                 </div>
                  <div v-else class="output-content" v-html="marked(node.result)"></div>
               </template>
@@ -147,7 +159,6 @@ const textareas = ref([]);
 const nodeCards = ref([]);
 const scrollContainer = ref(null);
 let scrollTimeout = null;
-const uploadedImage = ref(null);
 const fileInputs = ref([]); // 用于存储所有文件输入
 const getFileInput = () => fileInputs.value[focusedNodeIndex.value]; // 获取当前节点的文件输入
 
@@ -156,37 +167,40 @@ const triggerFileInput = () => {
   if (input) input.click();
 };
 
-const handleImageUpload = (event) => {
+const handleImageUpload = (event, nodeIndex) => {
   const file = event.target.files[0];
   if (!file) return;
 
   const reader = new FileReader();
   reader.onload = (e) => {
-    uploadedImage.value = e.target.result;
-    // 保存图片的base64数据，而不是文件名
-    nodes.value[0].imageData = e.target.result;
-    // 保持原有的prompt文本
-    if (!nodes.value[0].prompt || nodes.value[0].prompt.startsWith('[上传图片:')) {
-      nodes.value[0].prompt = '请描述这张图片的内容';
+    // 保存图片的base64数据到对应节点
+    nodes.value[nodeIndex].imageData = e.target.result;
+    // 根据节点设置默认提示词
+    if (!nodes.value[nodeIndex].prompt || nodes.value[nodeIndex].prompt.startsWith('[上传图片:')) {
+      if (nodeIndex === 0) {
+        nodes.value[nodeIndex].prompt = '请描述这张图片的内容';
+      } else if (nodeIndex === 2) {
+        nodes.value[nodeIndex].prompt = '请将这张图片转换为3D模型';
+      }
     }
   };
   reader.readAsDataURL(file);
 };
 
-const clearUploadedImage = () => {
-  uploadedImage.value = null;
-  const input = getFileInput();
-  if (input) input.value = '';
-  nodes.value[0].imageData = null;
-  nodes.value[0].prompt = '';
+const clearUploadedImage = (nodeIndex) => {
+  if (fileInputs.value[nodeIndex]) {
+    fileInputs.value[nodeIndex].value = '';
+  }
+  nodes.value[nodeIndex].imageData = null;
+  nodes.value[nodeIndex].prompt = '';
 };
 
 const nodes = ref([
   {
-    nodeId: 'step1_decompose',
-    title: '文旅IP多模态创作',
+    nodeId: 'step1_narrative_background',
+    title: 'IP元素叙事背景生成',
     prompt: '',
-    placeholder: '融合图文问答、视觉原型、动态表情包及场景化延展的 IP 创作流程',
+    placeholder: '深度分析现有 IP 的文化内涵与叙事潜力，构建完整的背景故事框架',
     result: '',
     completed: false,
     loading: false,
@@ -196,25 +210,26 @@ const nodes = ref([
     nodeId: 'step2_visual_prototype',
     title: '视觉原型生成',
     prompt: '',
-    placeholder: '请输入想要生成的文旅 IP 视觉原型风格：',
+    placeholder: '基于叙事背景，生成具有文化特色的文旅 IP 视觉原型设计',
     result: '',
     completed: false,
     loading: false
   },
   {
-    nodeId: 'step3_dynamic_emojis',
-    title: '动态表情包创作',
+    nodeId: 'step3_creative_product',
+    title: '文创产品生成',
     prompt: '',
-    placeholder: '将静态形象转化为系列表情动画，自动生成眨眼、口型等基础动作视频：',
+    placeholder: '将IP形象转化为3D文创产品模型，适用于纪念品、玩具、装饰品等商业应用',
     result: '',
     completed: false,
-    loading: false
+    loading: false,
+    imageData: null
   },
   {
     nodeId: 'step4_scenario_extension',
     title: '场景化延展',
     prompt: '',
-    placeholder: '生成 IP 在不同场景的应用效果图：周边产品/海报/社交媒体模板等：',
+    placeholder: '生成 IP 在不同场景的应用效果图：周边产品/海报/社交媒体模板等',
     result: '',
     completed: false,
     loading: false
@@ -232,10 +247,21 @@ const trackStyle = computed(() => {
 });
 
 
-// 3. 添加一个辅助函数来判断结果是否为图片URL
+// 3. 添加辅助函数来判断结果类型
 const isImageUrl = (text) => {
   // 这是一个简单的判断，可以根据实际返回的URL格式进行调整
   return typeof text === 'string' && (text.startsWith('http') || text.startsWith('data:image'));
+};
+
+// 添加3D模型识别函数
+const isModelUrl = (text) => {
+  return typeof text === 'string' && (
+    text.includes('.glb') || 
+    text.includes('.obj') || 
+    text.includes('.fbx') ||
+    text.includes('model') ||
+    text.includes('3d')
+  );
 };
 
 // 将后端返回的数据统一解析为可用的字符串（DataURL / URL / Markdown）
@@ -327,6 +353,18 @@ const downloadResult = (index) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  } else if (isModelUrl(result)) {
+    // 下载3D模型
+    const link = document.createElement('a');
+    link.href = result;
+    // 从URL中提取文件扩展名
+    const extension = result.includes('.glb') ? '.glb' : 
+                     result.includes('.obj') ? '.obj' : 
+                     result.includes('.fbx') ? '.fbx' : '.glb';
+    link.download = `节点${index + 1}_3D模型${extension}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   } else {
     // 下载文本
     const blob = new Blob([result], { type: 'text/plain' });
@@ -350,8 +388,8 @@ const callAgentApi = async (nodeIndex) => {
     return;
   }
   
-  if (!node.prompt.trim()) {
-    alert('请输入 Prompt 内容！');
+  if (!node.prompt.trim() && !node.imageData) {
+    alert('请输入 Prompt 内容或上传图片！');
     return;
   }
 
@@ -423,9 +461,9 @@ const isAnyNodeLoading = computed(() => {
 const getNodeModalityType = (nodeId) => {
   // 根据节点ID判断其输入/输出模态类型
   const modalityMap = {
-    'step1_decompose': { input: 'multimodal', output: 'text' },        // 多模态输入，文本输出
+    'step1_narrative_background': { input: 'multimodal', output: 'text' },        // 多模态输入，文本输出
     'step2_visual_prototype': { input: 'text', output: 'image' },      // 文本输入，图像输出
-    'step3_dynamic_emojis': { input: 'image', output: 'video' },       // 图像输入，视频输出
+    'step3_creative_product': { input: 'image', output: 'model' },       // 图像输入，3D模型输出
     'step4_scenario_extension': { input: 'text', output: 'image' }     // 文本输入，图像输出
   };
   return modalityMap[nodeId] || { input: 'text', output: 'text' };
@@ -485,6 +523,17 @@ const transferDataBetweenNodes = (fromIndex, toIndex) => {
         toNode.prompt = '请基于上一步生成的视频进行处理。';
       } else {
         console.log('前一个节点输出不是视频，无法传递给需要视频输入的节点');
+        return false;
+      }
+      break;
+      
+    case 'model':
+      // 如果下一个节点需要3D模型输入
+      if (fromNode.result.includes('.glb') || fromNode.result.includes('.obj') || fromNode.result.includes('model')) {
+        toNode.modelData = fromNode.result;
+        toNode.prompt = '请基于上一步生成的3D模型进行处理。';
+      } else {
+        console.log('前一个节点输出不是3D模型，无法传递给需要模型输入的节点');
         return false;
       }
       break;
@@ -772,6 +821,45 @@ onMounted(() => {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+
+.result-model-container {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 6px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+}
+
+.model-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.model-preview p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.model-link {
+  color: #4A90E2;
+  text-decoration: none;
+  font-size: 14px;
+  padding: 6px 12px;
+  border: 1px solid #4A90E2;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.model-link:hover {
+  background-color: #4A90E2;
+  color: white;
 }
 
 /* 8. 为渲染文本结果添加样式 */

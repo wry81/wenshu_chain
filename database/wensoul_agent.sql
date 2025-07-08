@@ -92,27 +92,27 @@ INSERT INTO `wensoul_agent` (`agent_name`, `agent_description`, `workflow`) VALU
     "promptTemplate": "综合以上内容，为该 IP 生成完整策划说明文档（含背景故事、形象说明、应用场景等）：\\n\\n{{input}}"
   }
   ]'),
-('文旅IP多模态创作','融合图文问答、视觉原型、动态表情包及场景化延展的 IP 创作流程','[
+('文旅IP多模态创作','融合叙事背景生成、视觉原型、文创产品及场景化延展的 IP 创作流程','[
   {
-    "nodeId": "step1_decompose",
-    "nodeName": "IP元素解构",
+    "nodeId": "step1_narrative_background",
+    "nodeName": "IP元素叙事背景生成",
     "nodeType": "multi-to-text",
     "model": "unicomiqa40B",
-    "promptTemplate": "深度分析现有 IP 的核心要素与市场定位，提取 DNA 级特征标签：\\n\\n{{input}}"
+    "promptTemplate": "深度分析现有 IP 的文化内涵与叙事潜力，构建完整的背景故事框架：\\n\\n{{input}}"
   },
   {
     "nodeId": "step2_visual_prototype",
     "nodeName": "视觉原型生成",
     "nodeType": "text-to-image",
     "model": "unicom_t2i",
-    "promptTemplate": "请输入想要生成的文旅 IP 视觉原型风格：\\n\\n{{input}}"
+    "promptTemplate": "基于叙事背景，生成具有文化特色的文旅 IP 视觉原型设计：\\n\\n{{input}}"
   },
   {
-    "nodeId": "step3_dynamic_emojis",
-    "nodeName": "动态表情包创作",
-    "nodeType": "text-to-video",
-    "model": "unicom_i2v",
-    "promptTemplate": "将静态形象转化为系列表情动画，自动生成眨眼、口型等基础动作视频：\\n\\n{{input}}"
+    "nodeId": "step3_creative_product",
+    "nodeName": "文创产品生成",
+    "nodeType": "image-to-model",
+    "model": "tripo3d",
+    "promptTemplate": "将IP形象转化为3D文创产品模型，适用于纪念品、玩具、装饰品等商业应用：\\n\\n{{input}}"
   },
   {
     "nodeId": "step4_scenario_extension",
