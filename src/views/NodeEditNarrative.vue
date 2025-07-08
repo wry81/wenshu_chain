@@ -75,6 +75,7 @@
               </p>
             </div>
           </template>
+          <div class="node-connector" v-if="index < nodes.length - 1"></div>
         </div>
       </div>
     </div>
@@ -85,6 +86,7 @@
       </button>
       
       <div class="progress-indicator">
+        <div class="progress-line"></div>
         <div 
           v-for="(node, index) in nodes" 
           :key="'progress-'+index"
@@ -99,7 +101,7 @@
       
       <button class="run-btn" @click="runAllNodes" :disabled="isAnyNodeLoading">
         <span v-if="isRunning">运行中...</span>
-        <span v-else>全部重做</span>
+        <span v-else>运行全部</span>
       </button>
 
       <button class="runCurrent-btn" @click="runCurrentNode">
@@ -521,6 +523,7 @@ onMounted(() => {
 
 <style scoped>
 .node-edit-page {
+  background-image: url('../assets/bgshizi.png');
   padding: 20px;
   max-width: 100%;
   margin: 0 auto;
@@ -582,6 +585,7 @@ onMounted(() => {
   transition: transform 1s ease, box-shadow 1s ease;
   scroll-snap-align: center;
   position: relative;
+  z-index: 2;
 }
 
 .focused-node {
@@ -596,7 +600,7 @@ onMounted(() => {
 .collapsed-node {
   width: 200px !important;
   height: 300px !important;
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 
 .collapsed-content {

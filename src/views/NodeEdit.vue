@@ -72,6 +72,7 @@
               </p>
             </div>
           </template>
+          <div class="node-connector" v-if="index < nodes.length - 1"></div>
         </div>
       </div>
     </div>
@@ -83,6 +84,7 @@
       </button>
       
       <div class="progress-indicator">
+        <div class="progress-line"></div>
         <div 
           v-for="(node, index) in nodes" 
           :key="'progress-'+index"
@@ -101,7 +103,7 @@
         :disabled="isAnyNodeLoading"
       >
         <span v-if="isRunning">运行中...</span>
-        <span v-else>全部重做</span>
+        <span v-else>运行全部</span>
       </button>
       <button class="runCurrent-btn" @click="runCurrentNode">
         <span v-if="nodes[focusedNodeIndex].loading">运行中...</span>
@@ -516,6 +518,7 @@ onMounted(() => {
 }
 
 .node-edit-page {
+  background-image: url('../assets/bgshizi.png');
   padding: 20px;
   max-width: 100%;
   margin: 0 auto;
@@ -578,6 +581,8 @@ h2 {
   transition: transform 1s ease, box-shadow 1s ease;
   scroll-snap-align: center;
   position: relative;
+  overflow: visible;
+  z-index: 2;
 }
 
 .focused-node {
@@ -592,7 +597,7 @@ h2 {
 .collapsed-node {
   width: 200px !important;
   height: 300px !important;
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 
 /* 折叠内容样式 */

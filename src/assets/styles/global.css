@@ -270,19 +270,51 @@ body {
   flex-shrink: 0;
   margin: 20px auto 0;
 }
-
+/* 节点连接线样式 */
+.node-connector {
+  position: absolute;
+  right: -110px; /* 保持不变 */
+  top: 120px; /* 改为 50% */
+  transform: translateY(-50%); /* 垂直居中 */
+  width: 110px;
+  height: 7px;
+  background-color: var(--theme-color-40);
+  z-index: 1;
+  opacity: 1 !important;
+}
+.collapsed-node .node-connector {
+  opacity: 1 !important; /* 覆盖可能存在的隐藏样式 */
+}
+/* 进度条容器样式 */
 .progress-indicator {
+  position: relative;
   display: flex;
-  gap: 60px;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  padding: 15px 0;
+}
+
+/* 进度条连接线样式 */
+.progress-line {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #ccc;
+  z-index: 0;
 }
 
 .progress-dot {
-  width: 10px;
-  height: 10px;
+  position: relative;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  background-color: #D9D9D9;
+  background-color: #ddd;
   cursor: pointer;
-  transition: all 0.2s;
+  z-index: 1;
+  transition: all 0.3s ease;
 }
 
 .progress-dot:hover {
