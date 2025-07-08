@@ -25,6 +25,7 @@
                 rows="6"
                 ref="textareas"
                 @focus="handleTextareaFocus(index)"
+                @input="(event) => adjustTextareaHeight(event.target)"
                 :disabled="node.loading"
               ></textarea>
             </div>
@@ -236,6 +237,78 @@ const handleTextareaFocus = (index) => {
   focusNode(index);
 };
 
+// 添加textarea自动高度调整功能
+const adjustTextareaHeight = (textarea) => {
+  if (!textarea) return;
+  
+  // 先设置为auto以获取内容的实际高度
+  textarea.style.height = 'auto';
+  
+  // 获取计算样式
+  const computedStyle = getComputedStyle(textarea);
+  const lineHeight = parseFloat(computedStyle.lineHeight) || 24;
+  const paddingTop = parseFloat(computedStyle.paddingTop) || 12;
+  const paddingBottom = parseFloat(computedStyle.paddingBottom) || 12;
+  const borderTop = parseFloat(computedStyle.borderTopWidth) || 1;
+  const borderBottom = parseFloat(computedStyle.borderBottomWidth) || 1;
+  
+  // 计算基础高度（padding + border）
+  const baseHeight = paddingTop + paddingBottom + borderTop + borderBottom;
+  
+  // 计算单行高度和最大8行高度
+  const singleLineHeight = lineHeight + baseHeight;
+  const maxLines = 8;
+  const maxHeight = lineHeight * maxLines + baseHeight;
+  
+  // 获取内容实际需要的高度
+  const scrollHeight = textarea.scrollHeight;
+  
+  // 如果没有内容或只有空白，显示单行高度
+  if (!textarea.value.trim()) {
+    textarea.style.height = singleLineHeight + 'px';
+    return;
+  }
+  
+  // 根据内容计算需要的高度，但不超过最大值
+  const newHeight = Math.min(scrollHeight, maxHeight);
+  textarea.style.height = newHeight + 'px';
+  
+  // 如果内容超过最大高度，启用滚动
+  if (scrollHeight > maxHeight) {
+    textarea.style.overflowY = 'scroll';
+  } else {
+    textarea.style.overflowY = 'hidden';
+  }
+};
+
+// 监听所有textarea的input事件
+const setupTextareaAutoResize = () => {
+  nextTick(() => {
+    textareas.value.forEach((textarea, index) => {
+      if (textarea) {
+        // 初始调整高度
+        adjustTextareaHeight(textarea);
+        
+        // 监听输入事件
+        const handleInput = () => adjustTextareaHeight(textarea);
+        textarea.removeEventListener('input', handleInput); // 避免重复绑定
+        textarea.addEventListener('input', handleInput);
+        
+        // 监听内容变化（比如通过代码设置的值）
+        const observer = new MutationObserver(() => {
+          adjustTextareaHeight(textarea);
+        });
+        observer.observe(textarea, { 
+          attributes: true, 
+          attributeFilter: ['value'],
+          childList: true,
+          subtree: true
+        });
+      }
+    });
+  });
+};
+
 // 聚焦到下一个节点
 const focusNextNode = () => {
   if (focusedNodeIndex.value < nodes.value.length - 1) {
@@ -392,6 +465,18 @@ const transferDataBetweenNodes = (fromIndex, toIndex) => {
   return true;
 };
 
+// 在数据传递后调用高度调整
+const transferDataAndAdjustHeight = (fromIndex, toIndex) => {
+  const result = transferDataBetweenNodes(fromIndex, toIndex);
+  if (result) {
+    // 延迟调用以确保DOM已更新
+    setTimeout(() => {
+      setupTextareaAutoResize();
+    }, 100);
+  }
+  return result;
+};
+
 // 运行所有节点
 const runAllNodes = async () => {
   if (isRunning.value) return;
@@ -417,7 +502,7 @@ const runAllNodes = async () => {
         }
         
         // 尝试传递数据
-        const canTransfer = transferDataBetweenNodes(i - 1, i);
+        const canTransfer = transferDataAndAdjustHeight(i - 1, i);
         if (!canTransfer) {
           console.log(`节点 ${i - 1} 到节点 ${i} 数据传递失败，需要用户手动输入`);
           alert(`数据传递失败，自动执行停止在第${i + 1}个节点。请手动输入内容后继续。`);
@@ -482,6 +567,7 @@ const exitEditor = () => {
 
 onMounted(() => {
   focusNode(0);
+  setupTextareaAutoResize(); // 在组件挂载时调用
   
   // 监听滚动事件，实现更精确的节点焦点检测
   if (scrollContainer.value) {
@@ -505,6 +591,9 @@ onMounted(() => {
       });
     }, 100); // 100ms后认为滚动停止
   });
+
+  // 监听所有textarea的input事件
+  setupTextareaAutoResize();
 }
 });
 </script>
@@ -652,9 +741,14 @@ h2 {
   border: 1px solid #ddd;
   border-radius: 8px;
   background-color: #F6F5F5;
-  min-height: 200px;
+  min-height: auto; /* 移除固定最小高度 */
+  max-height: none; /* 移除CSS最大高度限制，由JS控制 */
+  height: auto; /* 自动高度 */
   resize: vertical;
   font-family: inherit;
+  line-height: 1.5; /* 设置明确的行高 */
+  overflow-y: hidden; /* 默认隐藏滚动，由JS控制 */
+  transition: height 0.2s ease; /* 平滑的高度变化 */
 }
 
 .input-section textarea:focus {
@@ -673,10 +767,10 @@ h2 {
 .node-result {
   margin-top: 20px;
   padding-top: 20px;
-  padding-bottom: 80px;
+  padding-bottom: 60px; /* 减少底部padding */
   border-top: 1px solid #eee;
   overflow-y: auto; /* 允许内容滚动 */
-  max-height: calc(100% - 500px); /* 根据父容器高度计算 */
+  max-height: calc(100% - 350px); /* 调整最大高度，给输入区域留更多空间 */
 }
 
 
@@ -715,40 +809,91 @@ h2 {
   white-space: pre-wrap; /* 保证文本能正常换行 */
   word-wrap: break-word;
   overflow-y: auto; /* 允许内容滚动 */
-  max-height: 50%; /* 根据父容器高度计算 */
+  max-height: 400px; /* 设置固定的最大高度 */
+  border: 1px solid #e9ecef; /* 添加边框以明确显示区域 */
 }
 
 /* 覆盖 v-html 内部可能生成的元素的默认样式 */
 .output-content :deep(h1),
 .output-content :deep(h2),
-.output-content :deep(h3) {
-  margin-top: 1em;
-  margin-bottom: 0.5em;
+.output-content :deep(h3),
+.output-content :deep(h4),
+.output-content :deep(h5),
+.output-content :deep(h6) {
+  margin-top: 0.2em; /* 大幅减少标题顶部间距 */
+  margin-bottom: 0.1em; /* 大幅减少标题底部间距 */
   font-weight: 600;
+  line-height: 1.3; /* 紧凑的标题行高 */
 }
 .output-content :deep(p) {
-  margin-bottom: 1em;
+  margin-bottom: 0.2em; /* 大幅减少段落间距 */
+  margin-top: 0; /* 移除段落顶部间距 */
+  line-height: 1.3; /* 更紧凑的行高 */
 }
 .output-content :deep(ul),
 .output-content :deep(ol) {
-  padding-left: 2em;
+  padding-left: 1.5em; /* 减少列表缩进 */
+  margin-bottom: 0.1em; /* 大幅减少列表底部间距 */
+  margin-top: 0; /* 移除列表顶部间距 */
+}
+.output-content :deep(li) {
+  margin-bottom: 0.05em; /* 极小的列表项间距 */
+  line-height: 1.3; /* 紧凑的列表项行高 */
+  padding: 0; /* 移除列表项内边距 */
+}
+.output-content :deep(hr) {
+  margin-top: 0.3em; /* 减少分隔符上间距 */
+  margin-bottom: 0.3em; /* 减少分隔符下间距 */
+  border: none;
+  border-top: 1px solid #ddd;
+}
+.output-content :deep(blockquote) {
+  margin: 0.2em 0; /* 减少引用块间距 */
+  padding-left: 1em;
+  border-left: 3px solid #ddd;
 }
 .output-content :deep(code) {
   background-color: #e0e0e0;
-  padding: 2px 4px;
+  padding: 1px 3px; /* 减少代码内边距 */
   border-radius: 3px;
   font-family: monospace;
+  font-size: 0.9em;
 }
 .output-content :deep(pre) {
   background-color: #2d2d2d;
   color: #f8f8f2;
-  padding: 1em;
+  padding: 0.8em; /* 减少代码块内边距 */
   border-radius: 5px;
   overflow-x: auto;
+  margin-bottom: 0.2em; /* 大幅减少代码块间距 */
+  margin-top: 0; /* 移除代码块顶部间距 */
+  line-height: 1.3; /* 紧凑的代码行高 */
 }
 .output-content :deep(pre) code {
     background-color: transparent;
     padding: 0;
+}
+.output-content :deep(table) {
+  margin: 0.2em 0; /* 减少表格间距 */
+  border-collapse: collapse;
+}
+.output-content :deep(th),
+.output-content :deep(td) {
+  padding: 0.3em 0.5em; /* 减少表格单元格内边距 */
+  border: 1px solid #ddd;
+}
+/* 减少嵌套列表的间距 */
+.output-content :deep(li ul),
+.output-content :deep(li ol) {
+  margin-top: 0.05em;
+  margin-bottom: 0.05em;
+}
+/* 确保第一个和最后一个元素没有额外间距 */
+.output-content :deep(*:first-child) {
+  margin-top: 0 !important;
+}
+.output-content :deep(*:last-child) {
+  margin-bottom: 0 !important;
 }
 
 .loading-indicator {
