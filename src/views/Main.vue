@@ -18,7 +18,7 @@
             :class="['top-nav-btn', { 'top-nav-btn-selected': currentTopNav === 'narrative-engine' }]"
             @click="handleTopNavClick('narrative-engine')"
           >
-            叙事生成引擎
+            IP生成引擎
           </button>
           <button
             :class="['top-nav-btn', { 'top-nav-btn-selected': currentTopNav === 'ip-activation-engine' }]"
@@ -41,10 +41,13 @@
         </nav>
         <div class="navbar-right">
           <button class="top-nav-icon-btn">
-            <img src="../assets/search.svg" alt="搜索" />
+            <img src="../assets/earth.svg" alt="灵感" />
           </button>
           <button class="top-nav-icon-btn">
-            <img src="../assets/avatar.svg" alt="用户" />
+            <img src="../assets/search.svg" alt="搜索" />
+          </button>
+          <button class="top-nav-avartar">
+            <img src="../assets/avartar.svg" alt="用户" />
           </button>
         </div>
       </div>
@@ -258,7 +261,8 @@ export default {
   background-color: #ffffff7a;
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  padding-left: 20px;
+  padding-right: 30px;
   z-index: 10;
   border-bottom: 2px solid var(--theme-color-40);
   flex-shrink: 0; /* 确保顶部导航栏不收缩 */
@@ -288,15 +292,15 @@ export default {
   background-color: var(--white-color);
   border-radius: var(--border-radius-large);
   padding: 5px 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px var(--theme-color-20);
   gap: 5px;
 }
 
-.top-nav-btn {
+/* .top-nav-btn {
   padding: 8px 18px;
   height: auto;
   font-size: var(--font-size-body);
-  font-weight: 500;
+  font-weight: 900;
   border-radius: var(--border-radius-pill);
   color: var(--color-text-body);
   background-color: transparent;
@@ -311,12 +315,12 @@ export default {
 .top-nav-btn:hover {
   background-color: var(--theme-color-primary);
   color: #fff;
-}
+} */
 
 .navbar-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 15px;
 }
 
 /* 内容区域布局 */

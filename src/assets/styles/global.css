@@ -136,7 +136,7 @@ body {
 
 /* 顶部导航右侧图标按钮 */
 .top-nav-icon-btn {
-  background-color: transparent;
+  background-color: #fff;
   border: none;
   padding: 8px;
   cursor: pointer;
@@ -145,8 +145,28 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 4px var(--theme-color-20);
 }
-
+.top-nav-avartar {
+  background-color: #fff;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 50%; /* 圆形按钮 */
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px var(--theme-color-20);
+}
+.top-nav-avartar:hover {
+  opacity: 0.8;
+}
+.top-nav-avartar img{
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
 .top-nav-icon-btn:hover {
   background-color: var(--color-neutral-light);
 }
@@ -163,4 +183,236 @@ body {
   border-radius: var(--border-radius-medium);
   box-shadow: var(--box-shadow-soft);
   padding: 20px;
+}
+/* 底部工具栏样式 */
+
+.node-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1; /* 确保在内容之上 */
+}
+
+.redo-btn{
+  padding: 8px 40px;
+  border: none;
+  border-radius: 999px;
+  background-color: var(--color-divider);
+  color: var(--color-text-body);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+}
+
+.redo-btn:hover {
+  background-color: var(--color-neutral-light-gray);
+}
+
+.download-btn{
+  padding: 8px 40px;
+  border: 1px solid var(--theme-color-60);
+  border-radius: 999px;
+  background-color: #fff;
+  color: var(--theme-color-60);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+}
+
+.download-btn:hover {
+  background-color: var(--theme-color-20);
+}
+
+.continue-btn{
+  padding: 8px 40px;
+  border: none;
+  border-radius: 999px;
+  background-color: var(--theme-color-60);
+  color: #fff;
+  cursor: pointer;
+  font-size: var(--font-size-body);
+}
+
+.continue-btn:hover{
+  background-color: #cb6666;
+}
+.action-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 999px;
+  background-color: var(--color-divider);
+  color: #333;
+  cursor: pointer;
+}
+
+.action-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.task-bar {
+  height: 80px;
+  width: 650px;
+  background-color: #fff;
+  border-radius: var(--border-radius-large);
+  box-shadow: var(--box-shadow-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 30px;
+  gap: 20px;
+  flex-shrink: 0;
+  margin: 20px auto 0;
+}
+
+.progress-indicator {
+  display: flex;
+  gap: 15px;
+}
+
+.progress-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #D9D9D9;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.progress-dot:hover {
+  transform: scale(1.2);
+}
+
+.active-dot {
+  background-color: #013E77;
+  transform: scale(1.5);
+}
+
+.completed-dot {
+  background-color: #11C31D;
+}
+
+.global-actions {
+  display: flex;
+  gap: 15px;
+}
+
+.global-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.global-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.exit-btn {
+  height: 50px;                /* 统一高度 */
+  min-width: 100px;            /* 统一最小宽度，防止竖排 */
+  padding: 0 32px;             /* 左右内边距大于上下 */
+  border-radius: 16px;
+  font-size: 18px;             /* 统一字号 */
+  line-height: 50px;           /* 垂直居中 */
+  white-space: nowrap;         /* 不换行 */
+  display: inline-flex;        /* 横向排列 */
+  align-items: center;         /* 垂直居中 */
+  justify-content: center;     /* 水平居中 */
+  box-sizing: border-box;
+  background-color: var(--color-divider);
+  color: var(--color-text-body);
+  cursor: pointer;
+  box-shadow: none !important;   /* 强制无阴影 */
+  border: none;                  /* 默认无边框 */
+  outline: none;
+}
+
+.exit-btn:hover {
+  background-color: var(--color-neutral-light-gray);
+}
+
+.redoall-btn {
+  height: 50px;                /* 统一高度 */
+  min-width: 120px;            /* 统一最小宽度，防止竖排 */
+  padding: 0 32px;             /* 左右内边距大于上下 */
+  border-radius: 16px;
+  font-size: 18px;             /* 统一字号 */
+  line-height: 50px;           /* 垂直居中 */
+  white-space: nowrap;         /* 不换行 */
+  display: inline-flex;        /* 横向排列 */
+  align-items: center;         /* 垂直居中 */
+  justify-content: center;     /* 水平居中 */
+  box-sizing: border-box;
+  background-color: var(--color-divider);
+  color: var(--color-text-body);
+  cursor: pointer;
+  box-shadow: none !important;   /* 强制无阴影 */
+  border: none;                  /* 默认无边框 */
+  outline: none;
+}
+
+.redoall-btn:hover {
+  background-color: var(--theme-color-20);
+}
+
+.runCurrent-btn {
+  height: 50px;                /* 统一高度 */
+  min-width: 140px;            /* 统一最小宽度，防止竖排 */
+  padding: 0 32px;             /* 左右内边距大于上下 */
+  border-radius: 16px;
+  font-size: 18px;             /* 统一字号 */
+  line-height: 50px;           /* 垂直居中 */
+  white-space: nowrap;         /* 不换行 */
+  display: inline-flex;        /* 横向排列 */
+  align-items: center;         /* 垂直居中 */
+  justify-content: center;     /* 水平居中 */
+  box-sizing: border-box;
+  background-color: var(--theme-color-60);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: none !important;   /* 强制无阴影 */
+  border: none;                  /* 默认无边框 */
+  outline: none;
+}
+
+.runCurrent-btn:hover {
+  background-color: #cb6666;
+}
+
+.run-btn {
+  height: 50px;                /* 统一高度 */
+  min-width: 100px;            /* 统一最小宽度，防止竖排 */
+  padding: 0 32px;             /* 左右内边距大于上下 */
+  border-radius: 16px;
+  font-size: 18px;             /* 统一字号 */
+  line-height: 50px;           /* 垂直居中 */
+  white-space: nowrap;         /* 不换行 */
+  display: inline-flex;        /* 横向排列 */
+  align-items: center;         /* 垂直居中 */
+  justify-content: center;     /* 水平居中 */
+  box-sizing: border-box;
+  background-color: var(--theme-color-60);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: none !important;   /* 强制无阴影 */
+  border: none;                  /* 默认无边框 */
+  outline: none;
+}
+
+.run-btn:hover {
+  background-color: #cb6666;
+}
+.run-btn:disabled {
+  opacity: 0.7;
+  background-color: var(--theme-color-40) !important;
+  cursor: not-allowed;
 }

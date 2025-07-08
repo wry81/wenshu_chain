@@ -102,7 +102,7 @@
         <span v-else>运行全部节点</span>
       </button>
 
-      <button class="run-btn" @click="runCurrentNode">
+      <button class="runCurrent-btn" @click="runCurrentNode">
         <span v-if="nodes[focusedNodeIndex].loading">运行中...</span>
         <span v-else>运行当前节点</span>
       </button>
@@ -588,8 +588,8 @@ onMounted(() => {
   transform: scale(1);
   border: var(--theme-color-40) solid 3px;
   width: 600px;
-  height: 800px;
-  max-height: 800px;
+  height: 700px; /* 固定高度 */
+  max-height: 700px; /* 确保不超过600px */
   position: relative;
 }
 
@@ -644,8 +644,7 @@ onMounted(() => {
 
 .input-section textarea:focus {
   outline: none;
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+  
 }
 
 .input-section textarea:disabled {
@@ -756,169 +755,6 @@ onMounted(() => {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
-}
-
-.node-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  z-index: 1;
-}
-
-.redo-btn{
-  padding: 8px 40px;
-  border: none;
-  border-radius: 999px;
-  background-color: var(--color-divider);
-  color: var(--color-text-body);
-  cursor: pointer;
-  font-size: var(--font-size-body);
-}
-
-.redo-btn:hover {
-  background-color: var(--color-neutral-light-gray);
-}
-
-.download-btn{
-  padding: 8px 40px;
-  border: 1px solid var(--theme-color-60);
-  border-radius: 999px;
-  background-color: #fff;
-  color: var(--theme-color-60);
-  cursor: pointer;
-  font-size: var(--font-size-body);
-}
-
-.download-btn:hover {
-  background-color: var(--theme-color-20);
-}
-
-.continue-btn{
-  padding: 8px 40px;
-  border: none;
-  border-radius: 999px;
-  background-color: var(--theme-color-60);
-  color: #fff;
-  cursor: pointer;
-  font-size: var(--font-size-body);
-}
-
-.continue-btn:hover{
-  background-color: #cb6666;
-}
-
-.task-bar {
-  height: 80px;
-  width: 650px;
-  background-color: #fff;
-  border-radius: var(--border-radius-large);
-  box-shadow: var(--box-shadow-soft);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 30px;
-  gap: 20px;
-  flex-shrink: 0;
-  margin: 20px auto 0;
-}
-
-.progress-indicator {
-  display: flex;
-  gap: 15px;
-}
-
-.progress-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background-color: #D9D9D9;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.progress-dot:hover {
-  transform: scale(1.2);
-}
-
-.active-dot {
-  background-color: #013E77;
-  transform: scale(1.5);
-}
-
-.completed-dot {
-  background-color: #11C31D;
-}
-
-.exit-btn {
-  height: 50px;
-  min-width: 100px;
-  padding: 0 32px;
-  border-radius: 16px;
-  font-size: 18px;
-  line-height: 50px;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  background-color: var(--color-divider);
-  color: var(--color-text-body);
-  cursor: pointer;
-  box-shadow: none !important;
-  border: none;
-  outline: none;
-}
-
-.exit-btn:hover {
-  background-color: var(--color-neutral-light-gray);
-}
-
-.redoall-btn {
-  height: 50px;
-  min-width: 120px;
-  padding: 0 32px;
-  border-radius: 16px;
-  font-size: 18px;
-  line-height: 50px;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  background-color: var(--color-divider);
-  color: var(--color-text-body);
-  cursor: pointer;
-  box-shadow: none !important;
-  border: none;
-  outline: none;
-}
-
-.redoall-btn:hover {
-  background-color: var(--theme-color-20);
-}
-
-.run-btn {
-  padding: 15px 40px;
-  border: none;
-  border-radius: 16px;
-  background-color: var(--theme-color-60);
-  color: #fff;
-  cursor: pointer;
-  font-size: var(--font-size-body);
-}
-
-.run-btn:hover {
-  background-color: #cb6666;
-}
-
-.run-btn:disabled {
-  opacity: 0.7;
-  background-color: var(--theme-color-40) !important;
-  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {
