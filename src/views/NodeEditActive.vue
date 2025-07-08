@@ -14,11 +14,37 @@
           ref="nodeCards"
           @click="focusNode(index)"
         >
-          <div class="node-title">{{ node.title }}</div>  <!-- 直接显示预设的标题 -->
+          <div class="node-title">{{ node.title }}</div>
           
           <template v-if="focusedNodeIndex === index">
             <div class="input-section">
               <label>输入 Prompt:</label>
+              <!-- 在第一个节点和第三个节点添加图片上传 -->
+              <div v-if="index === 0 || index === 2" class="image-upload-section">
+                <div class="upload-area" @click="triggerFileInput">
+                  <div v-if="!node.imageData" class="upload-placeholder">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M19 13V19H5V13H3V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V13H19ZM13 5L11.59 6.41L13.17 8H5V10H13.17L11.58 11.59L13 13L17 9L13 5Z" fill="#4A90E2"/>
+                    </svg>
+                    <p>点击上传图片</p>
+                  </div>
+                  <img v-else :src="node.imageData" alt="上传的图片" class="preview-image">
+                  <input 
+                    type="file" 
+                    :ref="el => { if (el) fileInputs[index] = el }"
+                    accept="image/*"
+                    style="display: none"
+                    @change="(event) => handleImageUpload(event, index)"
+                  >
+                </div>
+                <button 
+                  v-if="node.imageData" 
+                  class="clear-image-btn" 
+                  @click.stop="clearUploadedImage(index)"
+                >
+                  清除图片
+                </button>
+              </div>
               <textarea
                 v-model="node.prompt"
                 :placeholder="node.placeholder || '请输入文字'"
@@ -35,13 +61,29 @@
                 <p>正在生成结果，请稍候...</p>
                 <div class="spinner"></div>
               </div>
-              <div v-else-if="node.result" class="output-content" v-html="marked(node.result)"></div>
+              <template v-else-if="node.result">
+                 <div v-if="isImageUrl(node.result)" class="result-image-container">
+                  <img :src="node.result" alt="AI生成结果" class="result-image">
+                </div>
+                 <div v-else-if="isModelUrl(node.result)" class="result-model-container">
+                  <div class="model-preview">
+                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M32 8L56 20V44L32 56L8 44V20L32 8Z" stroke="#4A90E2" stroke-width="2" fill="none"/>
+                      <path d="M32 8V32L56 20" stroke="#4A90E2" stroke-width="2" fill="none"/>
+                      <path d="M32 32L8 20" stroke="#4A90E2" stroke-width="2" fill="none"/>
+                      <path d="M32 32V56" stroke="#4A90E2" stroke-width="2" fill="none"/>
+                    </svg>
+                    <p>3D模型已生成</p>
+                    <a :href="node.result" target="_blank" class="model-link">查看/下载模型</a>
+                  </div>
+                </div>
+                 <div v-else class="output-content" v-html="marked(node.result)"></div>
+              </template>
               <p v-else class="no-result">点击"运行"按钮获取AI结果</p>
             </div>
 
             <div class="node-actions">
-              <!-- 操作按钮保持不变 -->
-                <button 
+              <button 
                 class="redo-btn" 
                 @click.stop="redoNode(index)"
                 :disabled="node.loading"
@@ -65,7 +107,6 @@
             </div>
           </template>
           <template v-else>
-            <!-- 折叠内容（非聚焦状态） -->
             <div class="collapsed-content">
               <p class="preview-text">
                 {{ node.prompt ? (node.prompt.length > 50 ? node.prompt.slice(0, 50) + '...' : node.prompt) : '无内容' }}
@@ -76,7 +117,6 @@
       </div>
     </div>
 
-    <!-- 任务栏保持不变 -->
     <div class="task-bar">
       <button class="exit-btn" @click="exitEditor">
         <span>退出</span>
@@ -95,15 +135,12 @@
         ></div>
       </div>
       
-      <button 
-        class="run-btn" 
-        @click="runAllNodes"
-        :disabled="isAnyNodeLoading"
-      >
+      <button class="run-btn" @click="runAllNodes" :disabled="isAnyNodeLoading">
         <span v-if="isRunning">运行中...</span>
         <span v-else>运行全部节点</span>
       </button>
-      <button class="runCurrent-btn" @click="runCurrentNode">
+
+      <button class="run-btn" @click="runCurrentNode">
         <span v-if="nodes[focusedNodeIndex].loading">运行中...</span>
         <span v-else>运行当前节点</span>
       </button>
@@ -114,7 +151,7 @@
 <script setup>
 import { ref, onMounted, nextTick, computed } from 'vue';
 import { useRoute } from 'vue-router';
-import { marked } from 'marked'; 
+import { marked } from 'marked'; // 1. 引入 marked 库
 
 const route = useRoute();
 const agentId = ref(route.params.agentId || 'default-agent');
@@ -122,102 +159,161 @@ const textareas = ref([]);
 const nodeCards = ref([]);
 const scrollContainer = ref(null);
 let scrollTimeout = null;
+const fileInputs = ref([]); // 用于存储所有文件输入
+const getFileInput = () => fileInputs.value[focusedNodeIndex.value]; // 获取当前节点的文件输入
+
+const triggerFileInput = () => {
+  const input = getFileInput();
+  if (input) input.click();
+};
+
+const handleImageUpload = (event, nodeIndex) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    // 保存图片的base64数据到对应节点
+    nodes.value[nodeIndex].imageData = e.target.result;
+    // 根据节点设置默认提示词
+    if (!nodes.value[nodeIndex].prompt || nodes.value[nodeIndex].prompt.startsWith('[上传图片:')) {
+      if (nodeIndex === 0) {
+        nodes.value[nodeIndex].prompt = '请描述这张图片的内容';
+      } else if (nodeIndex === 2) {
+        nodes.value[nodeIndex].prompt = '请将这张图片转换为3D模型';
+      }
+    }
+  };
+  reader.readAsDataURL(file);
+};
+
+const clearUploadedImage = (nodeIndex) => {
+  if (fileInputs.value[nodeIndex]) {
+    fileInputs.value[nodeIndex].value = '';
+  }
+  nodes.value[nodeIndex].imageData = null;
+  nodes.value[nodeIndex].prompt = '';
+};
 
 const nodes = ref([
   {
-    nodeId: 'step1_analyze_market',
-    title: '分析市场数据',
+    nodeId: 'step1_narrative_background',
+    title: 'IP元素叙事背景生成',
     prompt: '',
-    placeholder: '请根据以下市场信息，分析其主要趋势、机遇和挑战：',
+    placeholder: '深度分析现有 IP 的文化内涵与叙事潜力，构建完整的背景故事框架',
+    result: '',
+    completed: false,
+    loading: false,
+    imageData: null
+  },
+  {
+    nodeId: 'step2_visual_prototype',
+    title: '视觉原型生成',
+    prompt: '',
+    placeholder: '基于叙事背景，生成具有文化特色的文旅 IP 视觉原型设计',
     result: '',
     completed: false,
     loading: false
   },
   {
-    nodeId: 'step2_social_analysis',
-    title: '社媒热点分析',
+    nodeId: 'step3_creative_product',
+    title: '文创产品生成',
     prompt: '',
-    placeholder: '社交媒体热点词汇抓取与分析...',
+    placeholder: '将IP形象转化为3D文创产品模型，适用于纪念品、玩具、装饰品等商业应用',
     result: '',
     completed: false,
-    loading: false
+    loading: false,
+    imageData: null
   },
   {
-    nodeId: 'step3_competitor_research',
-    title: '竞品调研',
+    nodeId: 'step4_scenario_extension',
+    title: '场景化延展',
     prompt: '',
-    placeholder: '请输入竞品...',
-    result: '',
-    completed: false,
-    loading: false
-  },
-  {
-    nodeId: 'step4_challenge_opportunity',
-    title: '现状挑战与机遇',
-    prompt: '',
-    placeholder: '请输入内容...',
-    result: '',
-    completed: false,
-    loading: false
-  },
-  {
-    nodeId: 'step5_doc_generation',
-    title: '文档生成',
-    prompt: '',
-    placeholder: '请输入总结内容...',
+    placeholder: '生成 IP 在不同场景的应用效果图：周边产品/海报/社交媒体模板等',
     result: '',
     completed: false,
     loading: false
   }
 ]);
 
-// 截断文本方法
-const truncateText = (text) => {
-  if (!text) return '无内容';
-  return text.length > 50 ? text.slice(0, 50) + '...' : text;
-};
-
 
 const focusedNodeIndex = ref(0);
 const isRunning = ref(false);
 
-// 计算是否有任何节点正在加载
-const isAnyNodeLoading = computed(() => {
-  return nodes.value.some(node => node.loading);
-});
-
-// 计算轨道宽度
 const trackStyle = computed(() => {
   return {
-    width: `${nodes.value.length * 420}px` // 每个节点400px宽度 + 20px间距
+    width: `${nodes.value.length * 420}px`
   };
 });
 
-// 滚动到指定节点
-// 修改scrollToNode方法
+
+// 3. 添加辅助函数来判断结果类型
+const isImageUrl = (text) => {
+  // 这是一个简单的判断，可以根据实际返回的URL格式进行调整
+  return typeof text === 'string' && (text.startsWith('http') || text.startsWith('data:image'));
+};
+
+// 添加3D模型识别函数
+const isModelUrl = (text) => {
+  return typeof text === 'string' && (
+    text.includes('.glb') || 
+    text.includes('.obj') || 
+    text.includes('.fbx') ||
+    text.includes('model') ||
+    text.includes('3d')
+  );
+};
+
+// 将后端返回的数据统一解析为可用的字符串（DataURL / URL / Markdown）
+const normalizeApiResult = (apiData) => {
+  if (!apiData) return '';
+
+  // 1) 兼容常见字段名：result 或 data
+  let raw = apiData.result ?? apiData.data ?? '';
+
+  // 2) 若为数组则取第一项
+  if (Array.isArray(raw)) {
+    raw = raw[0] ?? '';
+  }
+
+  // 3) 确保最终是字符串
+  if (typeof raw !== 'string') {
+    raw = String(raw);
+  }
+
+// 4) 已是 URL 或 Data-URL，直接返回
+  if (raw.startsWith('http') || raw.startsWith('data:image')) {
+    return raw;
+  }
+
+// 5) 裸 Base64（JPEG 通常以 /9j/ 开头）→ 转为 Data-URL
+  if (/^\/9j/.test(raw) || /^[A-Za-z0-9+/]+=*$/.test(raw)) {
+    return `data:image/jpeg;base64,${raw}`;
+  }
+
+  // 6) 其它情况视为普通文本 / Markdown
+  return raw;
+};
+
 const scrollToNode = (index) => {
   nextTick(() => {
     const container = scrollContainer.value;
     const card = nodeCards.value[index];
     if (!container || !card) return;
     
-    // 计算需要额外滚动的距离（考虑放大效果）
-    const scrollOffset = card.offsetHeight * 0.02; // 放大2%的高度
-    
-    // 使用scrollBy实现精确控制
+    const scrollOffset = card.offsetHeight * 0.02;
     const containerRect = container.getBoundingClientRect();
     const cardRect = card.getBoundingClientRect();
     const targetPosition = cardRect.left - containerRect.left - (containerRect.width / 2) + (cardRect.width / 2);
     
     container.scrollBy({
       left: targetPosition,
-      top: -scrollOffset, // 向上滚动抵消放大高度
+      top: -scrollOffset,
       behavior: 'smooth'
     });
   });
 };
 
-// 聚焦到指定节点
 const focusNode = async (index) => {
   if (index >= 0 && index < nodes.value.length) {
     focusedNodeIndex.value = index;
@@ -229,75 +325,98 @@ const focusNode = async (index) => {
   }
 };
 
-// 处理textarea获取焦点事件
 const handleTextareaFocus = (index) => {
   focusNode(index);
 };
 
-// 聚焦到下一个节点
 const focusNextNode = () => {
   if (focusedNodeIndex.value < nodes.value.length - 1) {
     focusNode(focusedNodeIndex.value + 1);
   }
 };
 
-// 重做当前节点
 const redoNode = (index) => {
   nodes.value[index].result = '';
   nodes.value[index].completed = false;
   focusNode(index);
 };
 
-// 重做所有节点
-const redoAllNodes = () => {
-  nodes.value.forEach(node => {
-    node.result = '';
-    node.completed = false;
-  });
-  focusNode(0);
-};
-
-// 下载节点结果
 const downloadResult = (index) => {
   const result = nodes.value[index].result;
   if (!result) return;
   
-  const blob = new Blob([result], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `节点${index + 1}_结果.txt`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  if (isImageUrl(result)) {
+    // 下载图片
+    const link = document.createElement('a');
+    link.href = result;
+    link.download = `节点${index + 1}_结果.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } else if (isModelUrl(result)) {
+    // 下载3D模型
+    const link = document.createElement('a');
+    link.href = result;
+    // 从URL中提取文件扩展名
+    const extension = result.includes('.glb') ? '.glb' : 
+                     result.includes('.obj') ? '.obj' : 
+                     result.includes('.fbx') ? '.fbx' : '.glb';
+    link.download = `节点${index + 1}_3D模型${extension}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } else {
+    // 下载文本
+    const blob = new Blob([result], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `节点${index + 1}_结果.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 };
 
-// 调用后端API
 const callAgentApi = async (nodeIndex) => {
   const node = nodes.value[nodeIndex];
   const token = localStorage.getItem('token');
   
   if (!token) {
-    throw new Error('请先登录');
+    alert('请先登录');
+    return;
   }
   
-  if (!node.prompt.trim()) {
-    throw new Error('请输入 Prompt 内容！');
+  if (!node.prompt.trim() && !node.imageData) {
+    alert('请输入 Prompt 内容或上传图片！');
+    return;
   }
 
   try {
     node.loading = true;
+    
+    // 构建请求体
+    let requestBody = { 
+      nodeId: node.nodeId 
+    };
+    
+    if (node.imageData) {
+      // 如果有图片数据，传递图片数据作为input，提示词作为额外参数
+      requestBody.input = node.imageData;
+      requestBody.prompt = node.prompt;
+    } else {
+      // 如果没有图片，只传递文本
+      requestBody.input = node.prompt;
+    }
+    
     const response = await fetch(`/api/agents/${agentId.value}/run`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        input: node.prompt,
-        nodeId: node.nodeId
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -306,29 +425,27 @@ const callAgentApi = async (nodeIndex) => {
     }
     
     const data = await response.json();
-    node.result = data.result || JSON.stringify(data);
+
+    // === 关键修改：处理并格式化Base64图片数据 ===
+    const resultToShow = normalizeApiResult(data);
+    node.result = resultToShow;
+    // === 修改结束 ===
+    
     node.completed = true;
-    return true;
+
+    // 将上一步的结果（可能是Data URL）填充到下一个节点的prompt
+    //if (nodeIndex + 1 < nodes.value.length) {
+      // 为避免下一个节点输入过长，这里可以只传递提示信息
+      //nodes.value[nodeIndex + 1].prompt = `[上一步生成了一张图片，请根据这张图片继续操作]`;
+    //}
+
   } catch (error) {
-    node.result = `错误: ${error.message}`;
-    throw error;
+    node.result = `[前端错误] ${error.message}`;
   } finally {
     node.loading = false;
   }
 };
 
-// 运行单个节点
-const runSingleNode = async (index) => {
-  try {
-    await callAgentApi(index);
-    return true;
-  } catch (error) {
-    console.error('节点处理失败:', error);
-    return false;
-  }
-};
-
-// 仅运行当前聚焦的节点
 const runCurrentNode = () => {
   const currentIndex = focusedNodeIndex.value;
   if (nodes.value[currentIndex]) {
@@ -336,15 +453,18 @@ const runCurrentNode = () => {
   }
 };
 
-// 节点模态类型判断 - 文本分析工作流
+const isAnyNodeLoading = computed(() => {
+  return nodes.value.some(node => node.loading);
+});
+
+// 节点模态类型判断
 const getNodeModalityType = (nodeId) => {
   // 根据节点ID判断其输入/输出模态类型
   const modalityMap = {
-    'step1_analyze_market': { input: 'text', output: 'text' },      // 文本输入，文本输出
-    'step2_social_analysis': { input: 'text', output: 'text' },    // 文本输入，文本输出
-    'step3_competitor_research': { input: 'text', output: 'text' }, // 文本输入，文本输出
-    'step4_challenge_opportunity': { input: 'text', output: 'text' }, // 文本输入，文本输出
-    'step5_doc_generation': { input: 'text', output: 'text' }      // 文本输入，文本输出
+    'step1_decompose': { input: 'multimodal', output: 'text' },        // 多模态输入，文本输出
+    'step2_visual_prototype': { input: 'text', output: 'image' },      // 文本输入，图像输出
+    'step3_dynamic_emojis': { input: 'image', output: 'video' },       // 图像输入，视频输出
+    'step4_scenario_extension': { input: 'text', output: 'image' }     // 文本输入，图像输出
   };
   return modalityMap[nodeId] || { input: 'text', output: 'text' };
 };
@@ -372,26 +492,54 @@ const transferDataBetweenNodes = (fromIndex, toIndex) => {
     return false;
   }
   
-  // 对于文本分析工作流，大部分都是文本到文本的传递
-  if (toModality.input === 'text') {
-    // 根据具体节点类型添加上下文提示
-    const nodePrompts = {
-      'step2_social_analysis': `基于以下市场分析结果，请进行社交媒体热点分析：\n\n${fromNode.result}`,
-      'step3_competitor_research': `基于以下分析结果，请进行竞品调研：\n\n${fromNode.result}`,
-      'step4_challenge_opportunity': `基于以下分析结果，请总结现状挑战与机遇：\n\n${fromNode.result}`,
-      'step5_doc_generation': `基于以上所有分析结果，请生成完整的分析文档：\n\n${fromNode.result}`
-    };
-    
-    toNode.prompt = nodePrompts[toNode.nodeId] || fromNode.result;
-  } else {
-    toNode.prompt = fromNode.result;
+  // 根据模态类型传递数据
+  switch (toModality.input) {
+    case 'text':
+      // 如果下一个节点需要文本输入
+      if (isImageUrl(fromNode.result)) {
+        // 如果前一个节点输出是图片，生成描述性文本
+        toNode.prompt = `请基于上一步生成的图片继续处理。`;
+      } else {
+        // 如果前一个节点输出是文本，直接传递
+        toNode.prompt = fromNode.result;
+      }
+      break;
+      
+    case 'image':
+      // 如果下一个节点需要图像输入
+      if (isImageUrl(fromNode.result)) {
+        toNode.imageData = fromNode.result;
+        toNode.prompt = '请基于上一步生成的图片进行处理。';
+      } else {
+        console.log('前一个节点输出不是图片，无法传递给需要图像输入的节点');
+        return false;
+      }
+      break;
+      
+    case 'video':
+      // 如果下一个节点需要视频输入
+      if (fromNode.result.includes('.mp4') || fromNode.result.includes('video')) {
+        toNode.videoData = fromNode.result;
+        toNode.prompt = '请基于上一步生成的视频进行处理。';
+      } else {
+        console.log('前一个节点输出不是视频，无法传递给需要视频输入的节点');
+        return false;
+      }
+      break;
+      
+    case 'multimodal':
+      // 多模态输入节点通常不需要自动传递，由用户手动输入
+      return false;
+      
+    default:
+      toNode.prompt = fromNode.result;
   }
   
   return true;
 };
 
-// 运行所有节点
 const runAllNodes = async () => {
+  if (isRunning.value) return;
   if (isRunning.value) return;
   
   isRunning.value = true;
@@ -410,7 +558,6 @@ const runAllNodes = async () => {
         // 检查前一个节点是否已完成
         if (!prevNode.completed || !prevNode.result) {
           console.log(`前一个节点未完成，停止在节点 ${i}`);
-          alert(`前一个节点未完成，自动执行停止在第${i + 1}个节点。`);
           break;
         }
         
@@ -418,15 +565,45 @@ const runAllNodes = async () => {
         const canTransfer = transferDataBetweenNodes(i - 1, i);
         if (!canTransfer) {
           console.log(`节点 ${i - 1} 到节点 ${i} 数据传递失败，需要用户手动输入`);
-          alert(`数据传递失败，自动执行停止在第${i + 1}个节点。请手动输入内容后继续。`);
+          // 模态不匹配或传递失败，停止自动执行
+          alert(`模态不匹配或需要用户输入，自动执行停止在第${i + 1}个节点。请手动输入内容后继续。`);
           break;
         }
-        
-        console.log(`数据已从节点 ${i} 传递到节点 ${i + 1}`);
       }
       
       // 检查当前节点是否有输入内容
-      if (!node.prompt.trim()) {
+      if (!node.prompt.trim() && !node.imageData) {
+        if (i === 0) {
+          alert(`第${i + 1}个节点需要用户手动输入内容，请输入后重新运行。`);
+        } else {
+          alert(`第${i + 1}个节点无法自动获取输入，请手动输入内容后继续。`);
+        }
+        break;
+      }
+      
+      // 重置节点状态
+      // 如果不是第一个节点，尝试从前一个节点传递数据
+      if (i > 0) {
+        const prevNode = nodes.value[i - 1];
+        
+        // 检查前一个节点是否已完成
+        if (!prevNode.completed || !prevNode.result) {
+          console.log(`前一个节点未完成，停止在节点 ${i}`);
+          break;
+        }
+        
+        // 尝试传递数据
+        const canTransfer = transferDataBetweenNodes(i - 1, i);
+        if (!canTransfer) {
+          console.log(`节点 ${i - 1} 到节点 ${i} 数据传递失败，需要用户手动输入`);
+          // 模态不匹配或传递失败，停止自动执行
+          alert(`模态不匹配或需要用户输入，自动执行停止在第${i + 1}个节点。请手动输入内容后继续。`);
+          break;
+        }
+      }
+      
+      // 检查当前节点是否有输入内容
+      if (!node.prompt.trim() && !node.imageData) {
         if (i === 0) {
           alert(`第${i + 1}个节点需要用户手动输入内容，请输入后重新运行。`);
         } else {
@@ -446,7 +623,15 @@ const runAllNodes = async () => {
         // 检查执行是否成功
         if (!node.completed || !node.result) {
           console.log(`节点 ${i} 执行失败，停止自动执行`);
-          alert(`第${i + 1}个节点执行失败，停止自动执行。`);
+          break;
+        }
+        
+        console.log(`节点 ${i} 执行完成，输出:`, node.result.substring(0, 100) + '...');
+        
+        
+        // 检查执行是否成功
+        if (!node.completed || !node.result) {
+          console.log(`节点 ${i} 执行失败，停止自动执行`);
           break;
         }
         
@@ -460,11 +645,19 @@ const runAllNodes = async () => {
       
       // 添加短暂延迟
       await new Promise(resolve => setTimeout(resolve, 1000));
+      // 添加短暂延迟
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
     // 所有节点执行完成
     if (nodes.value.every(node => node.completed)) {
-      alert('🎉 所有节点执行完成！工作流已完成。');
+      alert('🎉 所有节点执行完成！多模态创作工作流已完成。');
+    }
+    
+    
+    // 所有节点执行完成
+    if (nodes.value.every(node => node.completed)) {
+      alert('🎉 所有节点执行完成！多模态创作工作流已完成。');
     }
     
   } finally {
@@ -472,49 +665,37 @@ const runAllNodes = async () => {
   }
 };
 
-// 退出编辑器
 const exitEditor = () => {
   console.log('退出编辑器');
-  // 实际项目中这里可以添加路由跳转或其他退出逻辑
 };
 
 onMounted(() => {
   focusNode(0);
   
-  // 监听滚动事件，实现更精确的节点焦点检测
   if (scrollContainer.value) {
-  scrollContainer.value.addEventListener('scroll', () => {
-    if (!nodeCards.value.length) return;
-    
-    // 只在滚动停止后检测（防抖）
-    clearTimeout(scrollTimeout);
-    scrollTimeout = setTimeout(() => {
-      const container = scrollContainer.value;
-      const scrollPosition = container.scrollLeft + container.clientWidth/2;
+    scrollContainer.value.addEventListener('scroll', () => {
+      if (!nodeCards.value.length) return;
       
-      // 使用getBoundingClientRect获取精确位置
-      nodeCards.value.forEach((card, index) => {
-        const rect = card.getBoundingClientRect();
-        const cardCenter = rect.left + rect.width/2 - container.getBoundingClientRect().left;
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        const container = scrollContainer.value;
+        const scrollPosition = container.scrollLeft + container.clientWidth/2;
         
-        if (Math.abs(scrollPosition - cardCenter) < 10) { // 10px容差
-          focusedNodeIndex.value = index;
-        }
-      });
-    }, 100); // 100ms后认为滚动停止
-  });
-}
+        nodeCards.value.forEach((card, index) => {
+          const rect = card.getBoundingClientRect();
+          const cardCenter = rect.left + rect.width/2 - container.getBoundingClientRect().left;
+          
+          if (Math.abs(scrollPosition - cardCenter) < 10) {
+            focusedNodeIndex.value = index;
+          }
+        });
+      }, 100);
+    });
+  }
 });
 </script>
 
 <style scoped>
-.node-title {
-  text-align: left; /* 左对齐 */
-  font-weight: 900; /* 加粗 */
-  font-size: var(--font-size-h3); /* 使用全局变量 */
-  color: #000000;
-}
-
 .node-edit-page {
   padding: 20px;
   max-width: 100%;
@@ -524,11 +705,11 @@ onMounted(() => {
   min-height: 90vh;
 }
 
-h2 {
-  font-size: var(--font-size-h2); /* H2 / 标题 / 26px */
-  font-weight: 600;
-  color: var(--color-title); /* 标题颜色 1F0C0C */
-  margin-bottom: 10px;
+.node-title {
+  text-align: left;
+  font-weight: 900;
+  font-size: var(--font-size-h3);
+  color: #000000;
 }
 
 .nodes-scroll-container {
@@ -536,7 +717,6 @@ h2 {
   width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
-  /* padding: 20px calc(50% - 200px); 动态计算内边距 */
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   scroll-padding: 0 calc(50% - 200px);
@@ -558,9 +738,9 @@ h2 {
 .nodes-track {
   display: flex;
   gap: 100px;
-  padding: 0 calc(50% - 200px); /* 添加对称内边距 */
+  padding: 0 calc(50% - 200px);
   min-height: 100%;
-  box-sizing: content-box; /* 确保内边距计入宽度 */
+  box-sizing: content-box;
   transition: transform 1s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
@@ -584,20 +764,19 @@ h2 {
   transform: scale(1);
   border: var(--theme-color-40) solid 3px;
   width: 600px;
-  height: 700px; /* 固定高度 */
-  max-height: 700px; /* 确保不超过600px */
+  height: 800px; /* 固定高度 */
+  max-height: 800px; /* 确保不超过600px */
   position: relative;
 }
-/* 折叠卡片样式 */
+
 .collapsed-node {
   width: 200px !important;
   height: 300px !important;
   overflow: hidden;
 }
 
-/* 折叠内容样式 */
 .collapsed-content {
-  height: calc(100% - 40px); /* 减去标题高度 */
+  height: calc(100% - 40px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -610,22 +789,9 @@ h2 {
   word-break: break-word;
 }
 
-/* 输入框调整 */
-/* .input-section textarea {
-  width: calc(100% - 20px);
-  margin: 0 10px;
-} */
-
 .loading-node {
   opacity: 0.8;
   pointer-events: none;
-}
-
-.node-card h3 {
-  font-size: 18px;
-  margin-bottom: 15px;
-  color: #444;
-  text-align: center;
 }
 
 .input-section {
@@ -654,16 +820,14 @@ h2 {
 
 .input-section textarea:focus {
   outline: none;
-  border-color: var(--theme-color-40);
-  box-shadow: 0 0 0 2px var(--theme-color-40);
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
 }
 
 .input-section textarea:disabled {
   background-color: #f5f5f5;
   cursor: not-allowed;
 }
-
-/* 移除或注释掉原有的 .node-result pre 样式 */
 
 .node-result {
   margin-top: 20px;
@@ -674,31 +838,69 @@ h2 {
   max-height: calc(100% - 500px); /* 根据父容器高度计算 */
 }
 
-
 .node-result h4 {
   font-size: 16px;
   margin-bottom: 10px;
   color: #444;
 }
 
-/* .node-result pre {
-  background: #f7f7f7;
-  padding: 12px;
+.result-image-container {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
   border-radius: 6px;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  max-height: 200px;
-  overflow-y: auto;
-  font-family: monospace;
-} */
-
-.no-result {
-  color: #999;
-  /* font-style: italic; */
-  text-align: center;
-  margin-top: 20px;
+  background: transparent;
 }
 
+.result-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.result-model-container {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 6px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+}
+
+.model-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.model-preview p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.model-link {
+  color: #4A90E2;
+  text-decoration: none;
+  font-size: 14px;
+  padding: 6px 12px;
+  border: 1px solid #4A90E2;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.model-link:hover {
+  background-color: #4A90E2;
+  color: white;
+}
+
+/* 8. 为渲染文本结果添加样式 */
 .output-content {
   /* background: #f7f7f7; */
   padding: 15px;
@@ -713,7 +915,6 @@ h2 {
   max-height: 50%; /* 根据父容器高度计算 */
 }
 
-/* 覆盖 v-html 内部可能生成的元素的默认样式 */
 .output-content :deep(h1),
 .output-content :deep(h2),
 .output-content :deep(h3) {
@@ -729,7 +930,7 @@ h2 {
   padding-left: 2em;
 }
 .output-content :deep(code) {
-  background-color: #e0e0e0;
+  /* background-color: #e0e0e0; */
   padding: 2px 4px;
   border-radius: 3px;
   font-family: monospace;
@@ -744,6 +945,13 @@ h2 {
 .output-content :deep(pre) code {
     background-color: transparent;
     padding: 0;
+}
+
+
+.no-result {
+  color: #999;
+  text-align: center;
+  margin-top: 20px;
 }
 
 .loading-indicator {
@@ -770,6 +978,204 @@ h2 {
   100% { transform: rotate(360deg); }
 }
 
+.node-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1; /* 确保在内容之上 */
+}
+
+.redo-btn{
+  padding: 8px 40px;
+  border: none;
+  border-radius: 999px;
+  background-color: var(--color-divider);
+  color: var(--color-text-body);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+}
+
+.redo-btn:hover {
+  background-color: var(--color-neutral-light-gray);
+}
+
+.download-btn{
+  padding: 8px 40px;
+  border: 1px solid var(--theme-color-60);
+  border-radius: 999px;
+  background-color: #fff;
+  color: var(--theme-color-60);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+}
+
+.download-btn:hover {
+  background-color: var(--theme-color-20);
+}
+
+.continue-btn{
+  padding: 8px 40px;
+  border: none;
+  border-radius: 999px;
+  background-color: var(--theme-color-60);
+  color: #fff;
+  cursor: pointer;
+  font-size: var(--font-size-body);
+}
+
+.continue-btn:hover{
+  background-color: #cb6666;
+}
+
+.task-bar {
+  height: 80px;
+  width: 650px;
+  background-color: #fff;
+  border-radius: var(--border-radius-large);
+  box-shadow: var(--box-shadow-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 30px;
+  gap: 20px;
+  flex-shrink: 0;
+  margin: 20px auto 0;
+}
+
+.progress-indicator {
+  display: flex;
+  gap: 15px;
+}
+
+.progress-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #D9D9D9;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.progress-dot:hover {
+  transform: scale(1.2);
+}
+
+.active-dot {
+  background-color: #013E77;
+  transform: scale(1.5);
+}
+
+.completed-dot {
+  background-color: #11C31D;
+}
+
+.exit-btn {
+  padding: 15px 25px;
+  border: none;
+  border-radius: 16px;
+  background-color: var(--color-divider);
+  color: var(--color-text-body);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+}
+
+.exit-btn:hover {
+  background-color: var(--color-neutral-light-gray);
+}
+
+.redoall-btn {
+  padding: 15px 30px;
+  border: 1px solid var(--theme-color-60);
+  border-radius: 16px;
+  background-color: #fff;
+  color: var(--theme-color-60);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+}
+
+.redoall-btn:hover {
+  background-color: var(--theme-color-20);
+}
+
+.run-btn {
+  padding: 15px 40px;
+  border: none;
+  border-radius: 16px;
+  background-color: var(--theme-color-60);
+  color: #fff;
+  cursor: pointer;
+  font-size: var(--font-size-body);
+}
+
+.run-btn:hover {
+  background-color: #cb6666;
+}
+
+.run-btn:disabled {
+  opacity: 0.7;
+  background-color: var(--theme-color-40) !important;
+  cursor: not-allowed;
+}
+
+.image-upload-section {
+  margin-bottom: 15px;
+}
+/* 上传图片样式 */
+.upload-area {
+  width: 100%;
+  height: 150px;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: border-color 0.3s;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.upload-area:hover {
+  border-color: #4a90e2;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #666;
+}
+
+.upload-placeholder svg {
+  margin-bottom: 8px;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.clear-image-btn {
+  padding: 6px 12px;
+  background-color: #ff4d4f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.clear-image-btn:hover {
+  background-color: #ff7875;
+}
+
 @media (max-width: 768px) {
   .node-card {
     width: 300px;
@@ -779,16 +1185,10 @@ h2 {
   .nodes-track {
     gap: 15px;
   }
-  
-  .global-actions {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
 
   .nodes-scroll-container {
-    padding: 40px calc(50% - 150px); /* 小屏幕调整 */
-    align-items: flex-start; /* 顶部对齐 */
+    padding: 40px calc(50% - 150px);
+    align-items: flex-start;
   }
 }
-
 </style>

@@ -101,11 +101,11 @@
         :disabled="isAnyNodeLoading"
       >
         <span v-if="isRunning">运行中...</span>
-        <span v-else>运行全部节点</span>
+        <span v-else>全部重做</span>
       </button>
       <button class="runCurrent-btn" @click="runCurrentNode">
         <span v-if="nodes[focusedNodeIndex].loading">运行中...</span>
-        <span v-else>运行当前节点</span>
+        <span v-else>运行</span>
       </button>
     </div>
   </div>
