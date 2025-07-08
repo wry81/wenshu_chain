@@ -159,12 +159,22 @@ async function executeNode(node, input, additionalPrompt) {
       break;
     case 'image-to-model':
       // 图生3D模型：将图片转换为3D模型
-      apiUrl = process.env.I2M_API_URL;
+      apiUrl = process.env.I2M_API_URL || 'https://api.tripo3d.ai/v2/openapi/task';
+      
+      // 检测图片类型
+      let imageType = 'jpg';
+      if (typeof currentInput === 'string' && currentInput.startsWith('data:image/')) {
+        const typeMatch = currentInput.match(/data:image\/([^;]+)/);
+        if (typeMatch) {
+          imageType = typeMatch[1] === 'jpeg' ? 'jpg' : typeMatch[1];
+        }
+      }
+      
       payload = {
         type: "image_to_model",
         file: {
-          type: "jpg", // 默认图片类型
-          file_token: currentInput // 这里需要处理图片数据
+          type: imageType,
+          file_token: currentInput // 这里将由llmService替换为image_token
         }
       };
       break;
@@ -352,7 +362,21 @@ async function executeNode(node, input, additionalPrompt) {
     else if (nodeType === 'image-to-model') {
       // 处理图像生成3D模型的返回结果
       if (result && (result.code === 0 || result.code === '0')) {
-        // 检查不同可能的返回格式
+        // 检查是否返回了task_id（异步任务）
+        if (result.data && result.data.task_id) {
+          console.log(`[agentService] 图生3D模型任务已提交，task_id: ${result.data.task_id}`);
+          
+          // 返回任务ID信息，告知前端这是一个异步任务
+          return JSON.stringify({
+            type: 'async_task',
+            task_id: result.data.task_id,
+            status: 'processing',
+            message: '3D模型生成任务已提交，正在处理中...',
+            note: '3D模型生成通常需要1-5分钟，请耐心等待。任务完成后可通过task_id查询结果。'
+          });
+        }
+        
+        // 检查不同可能的返回格式（如果是直接返回文件）
         if (result.data) {
           // 如果直接返回3D模型文件URL
           if (typeof result.data === 'string') {
