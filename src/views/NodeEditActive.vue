@@ -19,6 +19,32 @@
           <template v-if="focusedNodeIndex === index">
             <div class="input-section">
               <label>输入 Prompt:</label>
+              <!-- 在第一个节点和第三个节点添加图片上传 -->
+              <div v-if="index === 0 || index === 2" class="image-upload-section">
+                <div class="upload-area" @click="triggerFileInput">
+                  <div v-if="!node.imageData" class="upload-placeholder">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M19 13V19H5V13H3V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V13H19ZM13 5L11.59 6.41L13.17 8H5V10H13.17L11.58 11.59L13 13L17 9L13 5Z" fill="#4A90E2"/>
+                    </svg>
+                    <p>点击上传图片</p>
+                  </div>
+                  <img v-else :src="node.imageData" alt="上传的图片" class="preview-image">
+                  <input 
+                    type="file" 
+                    :ref="el => { if (el) fileInputs[index] = el }"
+                    accept="image/*"
+                    style="display: none"
+                    @change="(event) => handleImageUpload(event, index)"
+                  >
+                </div>
+                <button 
+                  v-if="node.imageData" 
+                  class="clear-image-btn" 
+                  @click.stop="clearUploadedImage(index)"
+                >
+                  清除图片
+                </button>
+              </div>
               <textarea
                 v-model="node.prompt"
                 :placeholder="node.placeholder || '请输入文字'"
@@ -205,13 +231,48 @@ const textareas = ref([]);
 const nodeCards = ref([]);
 const scrollContainer = ref(null);
 let scrollTimeout = null;
+const fileInputs = ref([]); // 用于存储所有文件输入
+const getFileInput = () => fileInputs.value[focusedNodeIndex.value]; // 获取当前节点的文件输入
+
+const triggerFileInput = () => {
+  const input = getFileInput();
+  if (input) input.click();
+};
+
+const handleImageUpload = (event, nodeIndex) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    // 保存图片的base64数据到对应节点
+    nodes.value[nodeIndex].imageData = e.target.result;
+    // 根据节点设置默认提示词
+    if (!nodes.value[nodeIndex].prompt || nodes.value[nodeIndex].prompt.startsWith('[上传图片:')) {
+      if (nodeIndex === 0) {
+        nodes.value[nodeIndex].prompt = '请分析这张图片中的文化元素和IP潜力';
+      } else if (nodeIndex === 2) {
+        nodes.value[nodeIndex].prompt = '请将这张图片转换为3D模型';
+      }
+    }
+  };
+  reader.readAsDataURL(file);
+};
+
+const clearUploadedImage = (nodeIndex) => {
+  if (fileInputs.value[nodeIndex]) {
+    fileInputs.value[nodeIndex].value = '';
+  }
+  nodes.value[nodeIndex].imageData = null;
+  nodes.value[nodeIndex].prompt = '';
+};
 
 const nodes = ref([
   {
-    nodeId: 'step1_analyze_market',
-    title: '分析市场数据',
+    nodeId: 'step1_narrative_background',
+    title: 'IP元素叙事背景生成',
     prompt: '',
-    placeholder: '请根据以下市场信息，分析其主要趋势、机遇和挑战：',
+    placeholder: '深度分析现有 IP 的文化内涵与叙事潜力，构建完整的背景故事框架',
     result: '',
     completed: false,
     loading: false,
@@ -219,20 +280,20 @@ const nodes = ref([
     checkingStatus: false
   },
   {
-    nodeId: 'step2_social_analysis',
-    title: '社媒热点分析',
+    nodeId: 'step2_visual_prototype',
+    title: '视觉原型生成',
     prompt: '',
-    placeholder: '社交媒体热点词汇抓取与分析...',
+    placeholder: '基于叙事背景，生成具有文化特色的文旅 IP 视觉原型设计',
     result: '',
     completed: false,
     loading: false,
     checkingStatus: false
   },
   {
-    nodeId: 'step3_competitor_research',
-    title: '竞品调研',
+    nodeId: 'step3_creative_product',
+    title: '文创产品生成',
     prompt: '',
-    placeholder: '请输入竞品...',
+    placeholder: '将IP形象转化为3D文创产品模型，适用于纪念品、玩具、装饰品等商业应用',
     result: '',
     completed: false,
     loading: false,
@@ -244,16 +305,6 @@ const nodes = ref([
     title: '场景化延展',
     prompt: '',
     placeholder: '生成 IP 在不同场景的应用效果图：周边产品/海报/社交媒体模板等',
-    result: '',
-    completed: false,
-    loading: false,
-    checkingStatus: false
-  },
-  {
-    nodeId: 'step5_doc_generation',
-    title: '文档生成',
-    prompt: '',
-    placeholder: '请输入总结内容...',
     result: '',
     completed: false,
     loading: false,
@@ -433,6 +484,14 @@ const redoNode = (index) => {
   focusNode(index);
 };
 
+// 重做所有节点
+const redoAllNodes = () => {
+  nodes.value.forEach(node => {
+    node.result = '';
+    node.completed = false;
+  });
+  focusNode(0);
+};
 
 // 下载3D模型文件
 const downloadModel = (modelUrl) => {
@@ -550,22 +609,34 @@ const callAgentApi = async (nodeIndex) => {
     throw new Error('请先登录');
   }
   
-  if (!node.prompt.trim()) {
-    throw new Error('请输入 Prompt 内容！');
+  if (!node.prompt.trim() && !node.imageData) {
+    throw new Error('请输入 Prompt 内容或上传图片！');
   }
 
   try {
     node.loading = true;
+    
+    // 构建请求体
+    let requestBody = { 
+      nodeId: node.nodeId 
+    };
+    
+    if (node.imageData) {
+      // 如果有图片数据，传递图片数据作为input，提示词作为额外参数
+      requestBody.input = node.imageData;
+      requestBody.prompt = node.prompt;
+    } else {
+      // 如果没有图片，只传递文本
+      requestBody.input = node.prompt;
+    }
+    
     const response = await fetch(`/api/agents/${agentId.value}/run`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        input: node.prompt,
-        nodeId: node.nodeId
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -740,15 +811,14 @@ const runCurrentNode = () => {
   }
 };
 
-// 节点模态类型判断 - 文本分析工作流
+// 节点模态类型判断 - 文旅IP多模态创作工作流
 const getNodeModalityType = (nodeId) => {
   // 根据节点ID判断其输入/输出模态类型
   const modalityMap = {
-    'step1_analyze_market': { input: 'text', output: 'text' },      // 文本输入，文本输出
-    'step2_social_analysis': { input: 'text', output: 'text' },    // 文本输入，文本输出
-    'step3_competitor_research': { input: 'text', output: 'text' }, // 文本输入，文本输出
-    'step4_challenge_opportunity': { input: 'text', output: 'text' }, // 文本输入，文本输出
-    'step5_doc_generation': { input: 'text', output: 'text' }      // 文本输入，文本输出
+    'step1_narrative_background': { input: 'multimodal', output: 'text' },        // 多模态输入，文本输出
+    'step2_visual_prototype': { input: 'text', output: 'image' },      // 文本输入，图像输出
+    'step3_creative_product': { input: 'image', output: 'model' },       // 图像输入，3D模型输出
+    'step4_scenario_extension': { input: 'text', output: 'image' }     // 文本输入，图像输出
   };
   return modalityMap[nodeId] || { input: 'text', output: 'text' };
 };
@@ -776,19 +846,58 @@ const transferDataBetweenNodes = (fromIndex, toIndex) => {
     return false;
   }
   
-  // 对于文本分析工作流，大部分都是文本到文本的传递
-  if (toModality.input === 'text') {
-    // 根据具体节点类型添加上下文提示
-    const nodePrompts = {
-      'step2_social_analysis': `基于以下市场分析结果，请进行社交媒体热点分析：\n\n${fromNode.result}`,
-      'step3_competitor_research': `基于以下分析结果，请进行竞品调研：\n\n${fromNode.result}`,
-      'step4_challenge_opportunity': `基于以下分析结果，请总结现状挑战与机遇：\n\n${fromNode.result}`,
-      'step5_doc_generation': `基于以上所有分析结果，请生成完整的分析文档：\n\n${fromNode.result}`
-    };
-    
-    toNode.prompt = nodePrompts[toNode.nodeId] || fromNode.result;
-  } else {
-    toNode.prompt = fromNode.result;
+  // 根据模态类型传递数据
+  switch (toModality.input) {
+    case 'text':
+      // 如果下一个节点需要文本输入
+      if (isImageUrl(fromNode.result)) {
+        // 如果前一个节点输出是图片，生成描述性文本
+        toNode.prompt = `请基于上一步生成的图片继续处理。`;
+      } else {
+        // 如果前一个节点输出是文本，直接传递
+        toNode.prompt = fromNode.result;
+      }
+      break;
+      
+    case 'image':
+      // 如果下一个节点需要图像输入
+      if (isImageUrl(fromNode.result)) {
+        toNode.imageData = fromNode.result;
+        toNode.prompt = '请基于上一步生成的图片进行处理。';
+      } else {
+        console.log('前一个节点输出不是图片，无法传递给需要图像输入的节点');
+        return false;
+      }
+      break;
+      
+    case 'video':
+      // 如果下一个节点需要视频输入
+      if (fromNode.result.includes('.mp4') || fromNode.result.includes('video')) {
+        toNode.videoData = fromNode.result;
+        toNode.prompt = '请基于上一步生成的视频进行处理。';
+      } else {
+        console.log('前一个节点输出不是视频，无法传递给需要视频输入的节点');
+        return false;
+      }
+      break;
+      
+    case 'model':
+      // 如果下一个节点需要3D模型输入
+      if (fromNode.result.includes('.glb') || fromNode.result.includes('.obj') || fromNode.result.includes('model')) {
+        toNode.modelData = fromNode.result;
+        toNode.prompt = '请基于上一步生成的3D模型进行处理。';
+      } else {
+        console.log('前一个节点输出不是3D模型，无法传递给需要模型输入的节点');
+        return false;
+      }
+      break;
+      
+    case 'multimodal':
+      // 多模态输入节点通常不需要自动传递，由用户手动输入
+      return false;
+      
+    default:
+      toNode.prompt = fromNode.result;
   }
   
   return true;
@@ -830,7 +939,7 @@ const runAllNodes = async () => {
       }
       
       // 检查当前节点是否有输入内容
-      if (!node.prompt.trim()) {
+      if (!node.prompt.trim() && !node.imageData) {
         if (i === 0) {
           alert(`第${i + 1}个节点需要用户手动输入内容，请输入后重新运行。`);
         } else {
@@ -868,7 +977,7 @@ const runAllNodes = async () => {
     
     // 所有节点执行完成
     if (nodes.value.every(node => node.completed)) {
-      alert('🎉 所有节点执行完成！工作流已完成。');
+      alert('🎉 所有节点执行完成！多模态创作工作流已完成。');
     }
     
   } finally {
