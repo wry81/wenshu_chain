@@ -157,6 +157,17 @@ async function executeNode(node, input, additionalPrompt) {
         image: currentInput
       };
       break;
+    case 'image-to-model':
+      // 图生3D模型：将图片转换为3D模型
+      apiUrl = process.env.I2M_API_URL;
+      payload = {
+        type: "image_to_model",
+        file: {
+          type: "jpg", // 默认图片类型
+          file_token: currentInput // 这里需要处理图片数据
+        }
+      };
+      break;
     default:
       console.warn(`[agentService] 不支持的节点类型: ${nodeType}`);
       return `[后端错误] 不支持的节点类型: ${nodeType}。`;
@@ -334,6 +345,47 @@ async function executeNode(node, input, additionalPrompt) {
         
         // 如果result本身就是视频URL字符串
         if (typeof result === 'string' && (result.startsWith('http') || result.endsWith('.mp4'))) {
+          return result;
+        }
+      }
+    }
+    else if (nodeType === 'image-to-model') {
+      // 处理图像生成3D模型的返回结果
+      if (result && (result.code === 0 || result.code === '0')) {
+        // 检查不同可能的返回格式
+        if (result.data) {
+          // 如果直接返回3D模型文件URL
+          if (typeof result.data === 'string') {
+            // 检查是否为完整URL
+            if (result.data.startsWith('http')) {
+              return result.data;
+            } else {
+              // 如果是文件名，需要构建完整URL
+              const baseUrl = process.env.I2M_API_URL;
+              return `${baseUrl}${result.data}`;
+            }
+          }
+        }
+        
+        // 检查resourceId字段
+        if (result.resourceId) {
+          // 如果返回resourceId，可能需要进一步查询
+          if (result.resourceId.startsWith('http')) {
+            return result.resourceId;
+          } else {
+            // 构建完整URL
+            const baseUrl = process.env.I2M_API_URL;
+            return `${baseUrl}${result.resourceId}`;
+          }
+        }
+        
+        // 如果有url字段，直接返回
+        if (result.url) {
+          return result.url;
+        }
+        
+        // 如果result本身就是3D模型URL字符串
+        if (typeof result === 'string' && (result.startsWith('http') || result.endsWith('.glb') || result.endsWith('.obj'))) {
           return result;
         }
       }
