@@ -208,4 +208,132 @@ function getStatusMessage(status) {
   return statusMessages[status] || '未知状态';
 }
 
+// 获取用户的历史记录列表
+router.get('/history', auth, async (req, res) => {
+  const userId = req.user.id;
+  const { agentId, page = 1, limit = 20 } = req.query;
+  
+  try {
+    let whereClause = 'r.user_id = ?';
+    let queryParams = [userId];
+    
+    // 如果指定了agentId，只查询特定agent的历史
+    if (agentId) {
+      whereClause += ' AND r.agent_id = ?';
+      queryParams.push(agentId);
+    }
+    
+    const offset = (page - 1) * limit;
+    queryParams.push(parseInt(limit), offset);
+    
+    const [rows] = await pool.query(`
+      SELECT 
+        r.run_id,
+        r.run_name,
+        r.agent_id,
+        r.status,
+        r.create_time,
+        r.update_time,
+        r.current_node_id,
+        a.agent_name,
+        a.agent_description,
+        COUNT(n.id) as node_count
+      FROM wensoul_agent_runs r
+      LEFT JOIN wensoul_agent a ON r.agent_id = a.id
+      LEFT JOIN wensoul_agent_run_nodes n ON r.run_id = n.run_id
+      WHERE ${whereClause}
+      GROUP BY r.run_id
+      ORDER BY r.create_time DESC
+      LIMIT ? OFFSET ?
+    `, queryParams);
+    
+    // 获取总数
+    const [countResult] = await pool.query(`
+      SELECT COUNT(*) as total
+      FROM wensoul_agent_runs r
+      WHERE ${whereClause}
+    `, queryParams.slice(0, -2)); // 移除LIMIT和OFFSET参数
+    
+    const total = countResult[0].total;
+    
+    res.json({
+      success: true,
+      data: rows,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+    
+  } catch (error) {
+    console.error('[agents] 获取历史记录失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '获取历史记录失败',
+      error: error.message
+    });
+  }
+});
+
+// 获取单个运行记录的详细信息
+router.get('/history/:runId', auth, async (req, res) => {
+  const userId = req.user.id;
+  const { runId } = req.params;
+  
+  try {
+    // 获取运行记录基本信息
+    const [runRows] = await pool.query(`
+      SELECT 
+        r.*,
+        a.agent_name,
+        a.agent_description
+      FROM wensoul_agent_runs r
+      LEFT JOIN wensoul_agent a ON r.agent_id = a.id
+      WHERE r.run_id = ? AND r.user_id = ?
+    `, [runId, userId]);
+    
+    if (runRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '未找到该运行记录'
+      });
+    }
+    
+    // 获取节点详细记录
+    const [nodeRows] = await pool.query(`
+      SELECT 
+        node_id,
+        node_name,
+        input,
+        output,
+        create_time
+      FROM wensoul_agent_run_nodes
+      WHERE run_id = ?
+      ORDER BY id
+    `, [runId]);
+    
+    const runData = runRows[0];
+    runData.nodes = nodeRows.map(node => ({
+      ...node,
+      input: typeof node.input === 'string' ? JSON.parse(node.input) : node.input,
+      output: typeof node.output === 'string' ? JSON.parse(node.output) : node.output
+    }));
+    
+    res.json({
+      success: true,
+      data: runData
+    });
+    
+  } catch (error) {
+    console.error('[agents] 获取运行详情失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '获取运行详情失败',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
