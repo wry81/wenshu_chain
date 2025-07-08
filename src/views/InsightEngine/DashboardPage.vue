@@ -9,7 +9,6 @@
     </div>
 
     <div class="dashboard-grid">
-      <!-- 第一行：两个正方形和一个长方形 -->
       <div class="chart-card square">
         <h3 class="chart-title">存储空间</h3>
         <div class="chart-container">
@@ -19,42 +18,55 @@
       </div>
 
       <div class="chart-card square">
-        <h3 class="chart-title">每月访问量</h3>
+        <h3 class="chart-title">资产分类</h3>
         <div class="chart-container">
           <BarChart v-if="barChartData" :data="barChartData" :options="barChartOptions" />
-          <div v-else class="loading-placeholder">加载每月访问量图...</div>
+          <div v-else class="loading-placeholder">加载资产分类图表...</div>
         </div>
       </div>
 
       <div class="chart-card rectangle">
-        <h3 class="chart-title">新增用户趋势</h3>
-        <div class="chart-container">
-          <LineChart v-if="lineChartData" :data="lineChartData" :options="chartOptions" />
-          <div v-else class="loading-placeholder">加载新增用户趋势图...</div>
-        </div>
-      </div>
-
-      <!-- 第二行：一个长方形和两个正方形 -->
-      <div class="chart-card rectangle">
-        <h3 class="chart-title">总收入趋势</h3>
+        <h3 class="chart-title">热搜追踪</h3>
         <div class="chart-container">
           <LineChart v-if="areaChartData" :data="areaChartData" :options="areaChartOptions" />
-          <div v-else class="loading-placeholder">加载总收入趋势图...</div>
+          <div v-else class="loading-placeholder">加载热搜追踪趋势图...</div>
         </div>
       </div>
 
-      <div class="chart-card square">
-        <h3 class="chart-title">产品性能与成本关系</h3>
-        <div class="chart-container">
-          <ScatterChart v-if="scatterChartData" :data="scatterChartData" :options="chartOptions" />
-          <div v-else class="loading-placeholder">加载产品性能与成本关系图...</div>
+      <div class="chart-card rectangle list-card insight-list">
+        <h3 class="chart-title">最新洞察</h3>
+        <div class="list-items-container">
+          <div v-for="(item, index) in latestInsightsData" :key="index" class="list-item">
+            <div class="item-icon">
+              <img src="../../assets/file.svg" alt="File Icon" class="icon-file" />
+            </div>
+            <div class="item-content">
+              <span class="item-title">{{ item.title }}</span>
+              <p v-if="item.description" class="item-description">{{ item.description }}</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="chart-card square">
-        <h3 class="chart-title">自定义图表 1</h3>
-        <div class="chart-container">
-          <div class="loading-placeholder">这是一个自定义图表区域，可以放置任意数据可视化</div>
+      <div class="chart-card square list-card prediction-list">
+        <h3 class="chart-title">爆款预测</h3>
+        <div class="list-items-container">
+          <div v-for="(item, index) in hotPredictionData" :key="index" class="list-item">
+            <div class="item-icon">
+              <img v-if="item.icon === 'trend'" src="../../assets/file.svg" alt="Trend Icon" class="icon-trend" />
+              <img v-else-if="item.icon === 'warning'" src="../../assets/file.svg" alt="Warning Icon" class="icon-warning" />
+            </div>
+            <div class="item-content">
+              <span class="item-title">{{ item.title }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card square stat-card generated-reports">
+        <h3 class="chart-title">已生成报告</h3>
+        <div class="stat-content">
+          <span class="stat-number">{{ generatedReportsCount }}</span>
         </div>
       </div>
     </div>
@@ -64,60 +76,32 @@
     </div>
 
     <div class="dashboard-grid">
-      <!-- 产品数据部分也采用相同布局 -->
-      <div class="chart-card rectangle">
-        <h3 class="chart-title">产品类别市场份额</h3>
-        <div class="chart-container">
-          <BarChart v-if="productBarChartData" :data="productBarChartData" :options="chartOptions" />
-          <div v-else class="loading-placeholder">加载产品类别市场份额图...</div>
+      <div class="chart-card rectangle list-card recent-projects">
+        <h3 class="chart-title">近期项目</h3>
+        <div class="list-items-container">
+          <div v-for="(item, index) in recentProjectsData" :key="index" class="list-item">
+            <div class="item-icon">
+              <img src="../../assets/file.svg" alt="File Icon" class="icon-file" />
+            </div>
+            <div class="item-content">
+              <span class="item-title">{{ item.title }}</span>
+              <p v-if="item.description" class="item-description">{{ item.description }}</p>
+            </div>
+          </div>
         </div>
       </div>
-      
-      <div class="chart-card square">
-        <h3 class="chart-title">产品销售额排行</h3>
-        <div class="chart-container table-container">
-          <table class="data-table" v-if="productSalesData.length">
-            <thead>
-              <tr>
-                <th>产品名称</th>
-                <th>销售额</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(product, index) in productSalesData" :key="index">
-                <td>{{ product.name }}</td>
-                <td>{{ product.sales }}</td>
-              </tr>
-            </tbody>
-          </table>
-          <div v-else class="loading-placeholder">暂无产品销售数据</div>
+
+      <div class="chart-card square stat-card incubated-projects">
+        <h3 class="chart-title">已孵化项目</h3>
+        <div class="stat-content">
+          <span class="stat-number">{{ incubatedProjectsCount }}</span>
         </div>
       </div>
-      
-      <div class="chart-card square">
-        <h3 class="chart-title">库存状况</h3>
-        <div class="chart-container table-container">
-          <table class="data-table" v-if="inventoryData.length">
-            <thead>
-              <tr>
-                <th>产品名称</th>
-                <th>库存量</th>
-                <th>状态</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(item, index) in inventoryData" :key="index">
-                <td>{{ item.name }}</td>
-                <td>{{ item.stock }}</td>
-                <td>
-                  <span :class="['stock-status', item.stock > 50 ? 'status-sufficient' : item.stock > 10 ? 'status-warning' : 'status-low']">
-                    {{ item.stock > 50 ? '充足' : item.stock > 10 ? '警告' : '不足' }}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <div v-else class="loading-placeholder">暂无库存数据</div>
+
+      <div class="chart-card square stat-card research-projects">
+        <h3 class="chart-title">在研项目</h3>
+        <div class="stat-content">
+          <span class="stat-number">{{ researchProjectsCount }}</span>
         </div>
       </div>
     </div>
@@ -125,7 +109,6 @@
 </template>
 
 <script>
-// 脚本部分保持不变
 import { Doughnut as DoughnutChart, Bar as BarChart, Line as LineChart, Scatter as ScatterChart } from 'vue-chartjs';
 import {
   Chart as ChartJS,
@@ -149,167 +132,282 @@ export default {
     DoughnutChart,
     BarChart,
     LineChart,
-    ScatterChart,
   },
   data() {
-  // 通用图表配置
-  const commonChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: true,
-        position: 'bottom',
+    // 通用图表配置
+    const commonChartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+        },
       },
-      tooltip: {
-        mode: 'index',
-        intersect: false,
-      },
-    },
-  };
+    };
 
-  // 面积图特殊配置
-  const areaChartOptions = {
-    ...commonChartOptions,
-    elements: {
-      line: {
-        tension: 0.4,
+    // 热搜追踪面积图特殊配置 (LineChart now acts as an Area Chart)
+    const areaChartOptions = {
+      ...commonChartOptions,
+      elements: {
+        line: {
+          tension: 0.4, // 平滑曲线
+          borderWidth: 2, // 线条宽度
+        },
+        point: {
+          radius: 4, // 数据点半径
+          borderWidth: 1, // 数据点边框宽度
+          backgroundColor: 'white', // 数据点背景色
+          borderColor: 'white', // 数据点边框色
+        },
       },
-      point: {
-        radius: 0,
+      scales: {
+        x: {
+          grid: {
+            display: false, // 隐藏 X 轴的垂直网格线
+          },
+          ticks: {
+            color: '#666', // X轴刻度文字颜色
+          },
+        },
+        y: {
+          beginAtZero: true, // Y 轴从 0 开始
+          min: 0, // 最小值
+          max: 100, // 最大值
+          ticks: {
+            stepSize: 20, // 步长 20
+            color: '#666', // Y轴刻度文字颜色
+            callback: function(value) {
+              return value;
+            }
+          },
+          grid: {
+            display: true, // 显示 Y 轴的水平网格线
+            color: 'rgba(0, 0, 0, 0.1)', // 网格线颜色，浅灰色
+            drawBorder: false, // 不绘制Y轴边框
+          },
+        },
       },
-    },
-  };
+      plugins: {
+        ...commonChartOptions.plugins,
+        legend: {
+          display: true, // 显示图例
+          position: 'top', // 图例位置在顶部
+          align: 'end', // 图例在顶部靠右对齐
+          labels: {
+            usePointStyle: true, // 使用点样式（圆形）作为图例标记
+            color: '#333', // 图例文字颜色
+            boxWidth: 8, // 图例标记的宽度
+            boxHeight: 8, // 图例标记的高度
+            padding: 15, // 图例项之间的内边距
+          },
+        },
+      },
+    };
 
-  // 条形图特殊配置（横向显示）
-  const barChartOptions = {
-    ...commonChartOptions,
-    indexAxis: 'y', // 横向显示
-    scales: {
-      x: {
-        display: false, // 隐藏X轴
-        grid: {
-          display: false // 隐藏X轴网格线
+    // 条形图特殊配置（横向显示）
+    const barChartOptions = {
+      ...commonChartOptions,
+      indexAxis: 'y', // 横向显示
+      scales: {
+        x: {
+          display: false, // 隐藏X轴
+          grid: {
+            display: false // 隐藏X轴网格线
+          }
+        },
+        y: {
+          grid: {
+            display: false // 隐藏Y轴网格线
+          }
         }
       },
-      y: {
-        grid: {
-          display: false // 隐藏Y轴网格线
+      plugins: {
+        ...commonChartOptions.plugins,
+        legend: {
+          display: false // 条形图不显示图例
+        }
+      },
+      elements: {
+        bar: {
+          borderRadius: {
+            topLeft: 16,
+            bottomLeft: 16,
+            topRight: 16,
+            bottomRight: 16
+          }
         }
       }
-    },
-    plugins: {
-      ...commonChartOptions.plugins,
-      legend: {
-        display: false // 条形图不显示图例
-      }
-    }
-  };
+    };
 
-  return {
-    // 图表数据
-    doughnutChartData: {
-      labels: ['已用', '未用'],
-      datasets: [
-        {
-          backgroundColor: ['#9C2323', '#F8D6D6'],
-          data: [21.5, 78.5],
-        },
+    return {
+      // 图表数据
+      doughnutChartData: {
+        labels: ['已用', '未用'],
+        datasets: [
+          {
+            backgroundColor: ['#9C2323', '#F8D6D6'],
+            data: [21.5, 78.5],
+            borderWidth: 0, // 甜甜圈图边框设为0
+          },
+        ],
+      },
+      barChartData: {
+        labels: ['文物', '区域', '非遗', '其他'],
+        datasets: [
+          {
+            label: '资产分类',
+            backgroundColor: ['#6B1211', '#9C2323', '#F8D6D6', '#F8D6D6'], // 颜色根据图片微调
+            data: [65, 59, 80, 81], // 确保数据点数量与标签数量匹配
+          },
+        ],
+      },
+      // 修改后的 areaChartData (用于热搜追踪)
+      areaChartData: {
+        labels: [
+          '外国人', '马面裙', '文化挪用', '共创', '抽象',
+          '特朗普', '文旅局', 'Z世代', '国潮', '元宇宙',
+          '情感经济', '发疯文学'
+        ],
+        datasets: [
+          {
+            label: '上月统计',
+            backgroundColor: 'rgba(235, 100, 100, 0.1)', // 红色系填充，透明度较低
+            borderColor: '#E74C3C', // 红色边框
+            pointBackgroundColor: '#E74C3C', // 数据点背景色
+            pointBorderColor: '#fff', // 数据点边框色
+            pointRadius: 4, // 数据点半径
+            pointHoverRadius: 6, // 鼠标悬停时的数据点半径
+            data: [90, 20, 75, 65, 50, 47, 70, 30, 62, 65, 48, 85], // 根据图片大致估算
+            fill: true, // 启用面积填充
+          },
+          {
+            label: '本月统计',
+            backgroundColor: 'rgba(52, 152, 219, 0.1)', // 蓝色系填充，透明度较低
+            borderColor: '#3498DB', // 蓝色边框
+            pointBackgroundColor: '#3498DB',
+            pointBorderColor: '#fff',
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            data: [85, 60, 70, 78, 20, 80, 95, 45, 90, 15, 50, 75], // 根据图片大致估算
+            fill: true,
+          },
+          {
+            label: '下月预测',
+            backgroundColor: 'rgba(150, 150, 150, 0.1)', // 灰色系填充，透明度较低
+            borderColor: '#95A5A6', // 灰色边框
+            pointBackgroundColor: '#95A5A6',
+            pointBorderColor: '#fff',
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            data: [95, 50, 60, 45, 35, 60, 60, 15, 25, 75, 18, 65], // 根据图片大致估算
+            fill: true,
+          },
+        ],
+      },
+      lineChartData: { // 这里是你的“新增用户趋势”，图片中没有直接对应，保持不变
+        labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+        datasets: [
+          {
+            label: '新增用户',
+            backgroundColor: '#FF6384',
+            borderColor: '#FF6384',
+            data: [30, 45, 25, 50, 40, 60, 35],
+            fill: false,
+          },
+        ],
+      },
+      scatterChartData: { // 图片中没有，保持不变
+        datasets: [
+          {
+            label: '产品数据',
+            backgroundColor: '#9966FF',
+            data: [
+              { x: 10, y: 20 },
+              { x: 15, y: 10 },
+              { x: 5, y: 25 },
+              { x: 20, y: 12 },
+              { x: 8, y: 30 },
+            ],
+          },
+        ],
+      },
+      productBarChartData: { // 图片中没有，保持不变
+        labels: ['电子产品', '服装', '家居用品', '食品', '图书'],
+        datasets: [
+          {
+            label: '市场份额 (%)',
+            backgroundColor: ['#FFCD56', '#4BC0C0', '#F8D6D6', '#C7CBCE', '#A17A7A'],
+            data: [25, 30, 15, 10, 20],
+          },
+        ],
+      },
+
+      // **新增：最新洞察数据**
+      latestInsightsData: [
+        { icon: 'file', title: '嘉善大云镇文旅资源分析', description: '大云镇隶属于嘉兴市嘉善县，位于......' },
+        { icon: 'file', title: '屏门乡农副产品市场调研', description: '淳安县屏门乡农副产品多种多样，......' },
+        { icon: 'file', title: '衢州老城文化街区开发...', description: '衢州老城文化街区以水亭街为中心......' },
       ],
-    },
-    barChartData: {
-      labels: ['一月', '二月', '三月', '四月', '五月', '六月'],
-      datasets: [
-        {
-          label: '访问量',
-          backgroundColor: '#42A5F5',
-          data: [65, 59, 80, 81, 56, 55],
-        },
+
+      // **新增：爆款预测数据**
+      hotPredictionData: [
+        { icon: 'trend', title: '李白“如何呢”亚克力立牌' },
+        { icon: 'warning', title: '三星堆黄金面具水杯办公......' },
+        { icon: 'warning', title: '秦兵马俑表情包解压摆件......' },
       ],
-    },
-    lineChartData: {
-      labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
-      datasets: [
-        {
-          label: '新增用户',
-          backgroundColor: '#FF6384',
-          borderColor: '#FF6384',
-          data: [30, 45, 25, 50, 40, 60, 35],
-          fill: false,
-        },
+
+      // **新增：已生成报告数量**
+      generatedReportsCount: 28,
+
+      // **新增：近期项目数据**
+      recentProjectsData: [
+        { icon: 'file', title: '嘉善塘宝盲盒', description: '塘宝以嘉善西塘IP形象为基础, 衍......' },
+        { icon: 'file', title: '屏门乡金陵纹筷架', description: '筷架外观取自金陵村特色屋顶瓦纹......' },
       ],
-    },
-    areaChartData: {
-      labels: ['Q1', 'Q2', 'Q3', 'Q4'],
-      datasets: [
-        {
-          label: '总收入 ($)',
-          backgroundColor: 'rgba(75, 192, 192, 0.2)',
-          borderColor: 'rgba(75, 192, 192, 1)',
-          data: [12000, 15000, 13000, 18000],
-          fill: true,
-        },
+
+      // **新增：已孵化项目数量**
+      incubatedProjectsCount: 12,
+
+      // **新增：在研项目数量**
+      researchProjectsCount: 3,
+
+      productSalesData: [ // 图片中没有，保持不变
+        { name: '智能手机 X', sales: '$25,000' },
+        { name: '无线耳机 Pro', sales: '$18,000' },
+        { name: '智能手表 Series 5', sales: '$12,000' },
+        { name: '便携式充电宝', sales: '$8,500' },
+        { name: '蓝牙音箱 Mini', sales: '$7,200' },
       ],
-    },
-    scatterChartData: {
-      datasets: [
-        {
-          label: '产品数据',
-          backgroundColor: '#9966FF',
-          data: [
-            { x: 10, y: 20 },
-            { x: 15, y: 10 },
-            { x: 5, y: 25 },
-            { x: 20, y: 12 },
-            { x: 8, y: 30 },
-          ],
-        },
+      inventoryData: [ // 图片中没有，保持不变
+        { name: 'T恤', stock: 120 },
+        { name: '牛仔裤', stock: 45 },
+        { name: '运动鞋', stock: 15 },
+        { name: '连衣裙', stock: 70 },
+        { name: '夹克', stock: 8 },
       ],
-    },
-    productBarChartData: {
-      labels: ['电子产品', '服装', '家居用品', '食品', '图书'],
-      datasets: [
-        {
-          label: '市场份额 (%)',
-          backgroundColor: ['#FFCD56', '#4BC0C0', '#F8D6D6', '#C7CBCE', '#A17A7A'],
-          data: [25, 30, 15, 10, 20],
-        },
-      ],
-    },
-    productSalesData: [
-      { name: '智能手机 X', sales: '$25,000' },
-      { name: '无线耳机 Pro', sales: '$18,000' },
-      { name: '智能手表 Series 5', sales: '$12,000' },
-      { name: '便携式充电宝', sales: '$8,500' },
-      { name: '蓝牙音箱 Mini', sales: '$7,200' },
-    ],
-    inventoryData: [
-      { name: 'T恤', stock: 120 },
-      { name: '牛仔裤', stock: 45 },
-      { name: '运动鞋', stock: 15 },
-      { name: '连衣裙', stock: 70 },
-      { name: '夹克', stock: 8 },
-    ],
-    
-    // 图表配置
-    chartOptions: commonChartOptions, // 通用配置
-    areaChartOptions: areaChartOptions, // 面积图专用配置
-    barChartOptions: barChartOptions, // 条形图专用配置（横向）
-    
-    // 其他图表可以继续添加专用配置...
-  };
-},
+
+      // 图表配置
+      chartOptions: commonChartOptions, // 通用配置
+      areaChartOptions: areaChartOptions, // 热搜追踪图专用配置
+      barChartOptions: barChartOptions, // 资产分类条形图专用配置
+    };
+  },
 };
 </script>
 
 <style scoped>
 .dashboard-page {
   padding: 20px;
-  background-color: var(--color-background);
-  color: var(--color-text-body);
+  background-color: var(--color-background); /* 假设这是一个浅背景色，如 #F8F8F8 */
+  color: var(--color-text-body); /* 假设文本颜色 */
   margin: 0px 50px;
   flex-grow: 1;
-  max-width: 100%; /* 添加最大宽度限制 */
+  max-width: 100%;
 }
 
 .dashboard-header {
@@ -317,13 +415,13 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  padding: 0 0px;
+  padding: 0;
 }
 
 .page-title {
-  font-size: var(--font-size-h2);
-  font-weight: 600;
-  color: var(--color-title);
+  font-size: var(--font-size-h2); /* 假设 h2 大小为 24px-28px */
+  font-weight: 600; /* 或 bold */
+  color: var(--color-title); /* 深色标题，如 #333 */
 }
 
 .section-header {
@@ -339,63 +437,65 @@ export default {
 .add-widget-btn {
   padding: 5px 15px;
   border-color: transparent;
-  box-shadow: var(--box-shadow);
-  border-radius: var(--border-radius-large);
-  background-color: var(--white-color);
-  color: var(--color-text-body); 
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); /* 轻微阴影 */
+  border-radius: var(--border-radius-large); /* 假设 8px-12px */
+  background-color: var(--white-color); /* 白色背景 */
+  color: var(--color-text-body);
   cursor: pointer;
-  font-size: var(--font-size-body);
+  font-size: var(--font-size-body); /* 假设 14px-16px */
   transition: all 0.3s ease;
 }
 
 .filter-btn:hover,
 .add-widget-btn:hover {
-  background-color: var(--color-neutral-light);
-  border-color: var(--theme-color-40);
+  background-color: var(--color-neutral-light); /* 浅灰色背景 */
+  border-color: var(--theme-color-40); /* 边框颜色 */
 }
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)); /* 使用minmax防止无限扩展 */
-  gap: 20px;
+  grid-template-columns: repeat(4, 1fr); /* 4列布局 */
+  gap: 20px; /* 卡片之间的间距 */
   width: 100%;
+  /* 确保所有卡片高度一致 */
+  grid-auto-rows: minmax(320px, auto); /* 每行最小高度，并允许根据内容自动增长 */
 }
 
 .chart-card {
   background-color: var(--white-color);
-  border-radius: var(--border-radius-large);
+  border-radius: 16px; /* 统一大圆角 */
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
+  height: auto; /* 允许高度由内容和 grid-auto-rows 控制 */
 }
 
 /* 正方形卡片样式 - 占1列 */
 .chart-card.square {
   grid-column: span 1;
-  aspect-ratio: 1; /* 简化的1:1宽高比 */
-  min-height: 300px; /* 设置最小高度 */
 }
 
 /* 长方形卡片样式 - 占2列 */
 .chart-card.rectangle {
   grid-column: span 2;
-  aspect-ratio: 2/1; /* 2:1宽高比 */
-  min-height: 300px; /* 设置最小高度 */
 }
 
 .chart-title {
-  font-size: var(--font-size-h3);
-  font-weight: 500;
+  font-size: var(--font-size-h3); /* 假设 h3 大小为 18px-20px */
+  font-weight: 600; /* 或 bolder */
   color: var(--color-title);
   margin-bottom: 15px;
-  padding: 0 20px; /* 添加内边距 */
+  padding: 0; /* 标题不再需要额外 padding，卡片自带 padding */
 }
 
 .chart-container {
-  height: 80%; /* 确保容器填满父元素 */
+  flex-grow: 1; /* 确保容器填充父元素剩余空间 */
   display: flex;
   flex-direction: column;
+  justify-content: center; /* 垂直居中加载提示 */
+  align-items: center; /* 水平居中加载提示 */
+  overflow: hidden; /* 防止图表内容溢出 */
 }
 
 .loading-placeholder {
@@ -404,10 +504,133 @@ export default {
   text-align: center;
 }
 
+/* --- 新增或修改的样式 --- */
+
+/* 列表卡片 (最新洞察, 爆款预测, 近期项目) */
+.chart-card.list-card {
+  .chart-title {
+    margin-bottom: 10px;
+  }
+}
+
+.list-items-container {
+  flex-grow: 1; /* 允许列表容器填充可用空间 */
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* 列表项之间的间距 */
+  padding-top: 5px; /* 标题和列表之间的间距 */
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  gap: 15px; /* 图标和文本之间的间距 */
+  background-color: #FDF9F9; /* 浅粉色背景，根据图片调整 */
+  border-radius: 12px; /* 列表项的圆角 */
+  padding: 15px 20px; /* 内边距 */
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  box-shadow: none; /* 列表项通常没有阴影 */
+}
+
+.list-item:hover {
+  background-color: #FAEDED; /* 鼠标悬停时的背景色 */
+}
+
+.item-icon {
+  flex-shrink: 0; /* 防止图标缩小 */
+  width: 20px; /* 图标宽度 */
+  height: 20px; /* 图标高度 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 针对 <img> 标签的 SVG 样式调整 */
+.item-icon img {
+  width: 100%;
+  height: 100%;
+  /* 如果你的 SVG 文件内部没有设置颜色，你可能需要通过 filter 属性来改变颜色
+     例如：filter: invert(50%) sepia(80%) saturate(1000%) hue-rotate(200deg) brightness(80%);
+     或者直接编辑 SVG 文件内部的 fill/stroke 属性
+  */
+}
+
+/* 爆款预测图标的特定颜色 */
+/* 注意：使用 <img> 标签时，直接通过 CSS 改变 SVG 颜色比较困难。
+   如果需要改变颜色，建议：
+   1. 直接修改 SVG 文件内部的 fill/stroke 属性。
+   2. 使用 SVG Sprite 或组件化的方式，这样可以更灵活地控制 SVG 内部元素的颜色。
+   3. 如果 SVG 足够简单且颜色单一，可以尝试 CSS filter 属性。
+   为了兼容性，以下颜色类将保留，但可能对 <img> 引入的 SVG 无效，除非 SVG 文件本身支持 currentColor 或你使用 filter。
+*/
+.prediction-list .item-icon .icon-trend {
+    /* filter: invert(30%) sepia(70%) saturate(600%) hue-rotate(340deg) brightness(80%); */
+}
+.prediction-list .item-icon .icon-warning {
+    /* filter: invert(60%) sepia(80%) saturate(600%) hue-rotate(0deg) brightness(120%); */
+}
+/* 如果你想让文件图标变色，也可以添加类似样式 */
+.icon-file {
+  /* filter: invert(70%) sepia(10%) saturate(0%) hue-rotate(180deg) brightness(80%); */
+}
+
+
+.item-content {
+  flex-grow: 1; /* 允许内容填充剩余空间 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* 隐藏溢出的文本 */
+}
+
+.item-title {
+  font-size: 16px; /* 标题字体大小 */
+  font-weight: 500;
+  color: var(--color-title);
+  white-space: nowrap; /* 不换行 */
+  overflow: hidden; /* 溢出隐藏 */
+  text-overflow: ellipsis; /* 显示省略号 */
+}
+
+.item-description {
+  font-size: 14px; /* 描述字体大小 */
+  color: #888; /* 描述颜色 */
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 统计数字卡片 (已生成报告, 已孵化项目, 在研项目) */
+.chart-card.stat-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* 垂直居中内容 */
+  align-items: center; /* 水平居中内容 */
+  text-align: center;
+}
+
+.stat-content {
+  flex-grow: 1; /* 允许内容区域填充剩余空间 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.stat-number {
+  font-size: 80px; /* 巨大数字字体大小 */
+  font-weight: 900; /* 加粗 */
+  color: #6B1211; /* 深红色，根据图片调整 */
+  line-height: 1; /* 调整行高，避免数字过高 */
+  margin-top: -10px; /* 微调位置 */
+}
+
+/* 产品数据部分的表格样式 */
 .table-container {
   overflow-x: auto;
   justify-content: flex-start;
   align-items: flex-start;
+  flex-grow: 1;
 }
 
 .data-table {
@@ -457,9 +680,10 @@ export default {
 /* 响应式调整 */
 @media (max-width: 1200px) {
   .dashboard-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: minmax(300px, auto);
   }
-  
+
   .chart-card.rectangle {
     grid-column: span 2;
   }
@@ -468,12 +692,12 @@ export default {
 @media (max-width: 768px) {
   .dashboard-grid {
     grid-template-columns: 1fr;
+    grid-auto-rows: minmax(280px, auto);
   }
-  
+
   .chart-card.square,
   .chart-card.rectangle {
     grid-column: span 1;
-    aspect-ratio: auto; /* 小屏幕取消固定宽高比 */
   }
 }
 </style>
