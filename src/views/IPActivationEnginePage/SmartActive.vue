@@ -2,47 +2,97 @@
   <div class="smart-insight-page">
     <div class="page-header">
       <div class="header-text">
-        <h2 class="page-title">已购买智能体</h2>
-        <div class="page-description">选择一个智能体，开始工作或管理</div>
-      </div>
-    <div class="sort-filter-group">
-        <button class="filter-btn">切换视图</button>
-        <div class="sort-dropdown">
-        <button class="sort-btn">排序: 最近更新 <span class="arrow-down"></span></button>
-        <div class="sort-options">
-            <div class="sort-option">最近更新</div>
-            <div class="sort-option">最近使用</div>
-            <div class="sort-option">创建时间升序</div>
+        <h2 class="page-title">
+          已购买智能体
+        </h2>
+        <div class="page-description">
+          选择一个智能体，开始工作或管理
         </div>
+      </div>
+      <div class="sort-filter-group">
+        <button class="filter-btn">
+          切换视图
+        </button>
+        <div class="sort-dropdown">
+          <button class="sort-btn">
+            排序: 最近更新 <span class="arrow-down" />
+          </button>
+          <div class="sort-options">
+            <div class="sort-option">
+              最近更新
+            </div>
+            <div class="sort-option">
+              最近使用
+            </div>
+            <div class="sort-option">
+              创建时间升序
+            </div>
+          </div>
         </div>
         <!-- <button class="search-btn"><img src="../../assets/search.svg" alt="搜索" /></button> -->
         <div class="search-container">
-        <input type="text" placeholder="搜索..." class="search-input">
-        <button class="search-btn"><img src="../../assets/search.svg" alt="搜索" /></button>
+          <input
+            type="text"
+            placeholder="搜索..."
+            class="search-input"
+          >
+          <button class="search-btn">
+            <img
+              src="../../assets/search.svg"
+              alt="搜索"
+            >
+          </button>
         </div>
-    </div>
+      </div>
     </div>
 
     <div class="agent-grid">
-      <div class="agent-card" @click="selectAgent(3)">
-        <img src="../../assets/bg2.png" alt="智能体图片" class="agent-card-image" />
-        <h3 class="agent-name">文旅IP多模态创作</h3>
+      <div
+        class="agent-card"
+        @click="selectAgent(3)"
+      >
+        <img
+          src="../../assets/bg2.png"
+          alt="智能体图片"
+          class="agent-card-image"
+        >
+        <h3 class="agent-name">
+          文旅IP多模态创作
+        </h3>
         <p class="agent-description">
           融合图文问答、视觉原型、动态表情包及场景化延展的 IP 创作流程。
         </p>
       </div>
 
-      <div class="agent-card" @click="selectAgent('agent2')">
-        <img src="../../assets/bg2.png" alt="智能体图片" class="agent-card-image" />
-        <h3 class="agent-name">IP故事生成</h3>
+      <div
+        class="agent-card"
+        @click="selectAgent('agent2')"
+      >
+        <img
+          src="../../assets/bg2.png"
+          alt="智能体图片"
+          class="agent-card-image"
+        >
+        <h3 class="agent-name">
+          IP故事生成
+        </h3>
         <p class="agent-description">
           基于角色设定自动生成引人入胜的IP故事线, 从世界观构建到情节发展, 为您的IP注入灵魂与记忆点。
         </p>
       </div>
 
-      <div class="agent-card" @click="selectAgent('agent2')">
-        <img src="../../assets/bg2.png" alt="智能体图片" class="agent-card-image" />
-        <h3 class="agent-name">IP形象动画化</h3>
+      <div
+        class="agent-card"
+        @click="selectAgent('agent2')"
+      >
+        <img
+          src="../../assets/bg2.png"
+          alt="智能体图片"
+          class="agent-card-image"
+        >
+        <h3 class="agent-name">
+          IP形象动画化
+        </h3>
         <p class="agent-description">
           将静态IP形象转化为生动动画, 自动生成表情动作与微交互, 让您的角色真正'活'起来, 提升用户情感连接。
         </p>
@@ -50,9 +100,13 @@
 
       <div class="agent-card add-agent-card">
         <div class="add-icon-container">
-          <div class="add-icon">+</div>
+          <div class="add-icon">
+            +
+          </div>
         </div>
-        <h3 class="agent-name">添加智能体</h3>
+        <h3 class="agent-name">
+          添加智能体
+        </h3>
       </div>
     </div>
   </div>

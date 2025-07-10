@@ -4,7 +4,10 @@
     <DashboardPage v-if="selectedInsightNav === 'dashboard'" />
     <SmartInsightPage v-else-if="selectedInsightNav === 'smart-insight'" />
     <InsightHistoryPage v-else-if="selectedInsightNav === 'insight-history'" />
-    <div v-else class="empty-state">
+    <div
+      v-else
+      class="empty-state"
+    >
       <a-empty description="请从左侧选择功能" />
     </div>
   </div>

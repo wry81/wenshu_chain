@@ -1,18 +1,39 @@
 <template>
-  <div class="custom-node" @click="emit('open-editor', node)">
+  <div
+    class="custom-node"
+    @click="emit('open-editor', node)"
+  >
     <div class="node-header">
       <h4>{{ node.data.label || '新节点' }}</h4>
-      <el-button link size="small" @click.stop="emit('open-editor', node)">编辑</el-button>
+      <el-button
+        link
+        size="small"
+        @click.stop="emit('open-editor', node)"
+      >
+        编辑
+      </el-button>
     </div>
     <div class="node-content">
       <p>Prompt: {{ node.data.prompt ? (node.data.prompt.length > 20 ? node.data.prompt.substring(0, 20) + '...' : node.data.prompt) : '未设置' }}</p>
-      <p v-if="node.data.result">结果: 已生成</p>
-      <p v-else-if="node.data.loading">结果: 加载中...</p>
-      <p v-else>结果: 待运行</p>
+      <p v-if="node.data.result">
+        结果: 已生成
+      </p>
+      <p v-else-if="node.data.loading">
+        结果: 加载中...
+      </p>
+      <p v-else>
+        结果: 待运行
+      </p>
     </div>
 
-    <Handle type="source" :position="Position.Right" />
-    <Handle type="target" :position="Position.Left" />
+    <Handle
+      type="source"
+      :position="Position.Right"
+    />
+    <Handle
+      type="target"
+      :position="Position.Left"
+    />
   </div>
 </template>
 

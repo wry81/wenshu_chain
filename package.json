@@ -19,6 +19,7 @@
     "core-js": "^3.8.3",
     "element-plus": "^2.10.2",
     "form-data": "^4.0.3",
+    "html2pdf.js": "^0.10.3",
     "marked": "^15.0.12",
     "vue": "^3.2.13",
     "vue-chartjs": "^5.3.2",

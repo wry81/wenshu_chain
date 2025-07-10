@@ -21,9 +21,9 @@ async function callLLM({ payload, prompt, model, apiUrl, apiKey, nodeType }) {
     // 其他节点类型使用默认配置
     finalApiKey = apiKey || process.env.LLM_API_KEY;
     finalUrl = apiUrl || process.env.LLM_API_URL;
-    
-    if (!finalApiKey) {
-      throw new Error('LLM API key not configured');
+
+  if (!finalApiKey) {
+    throw new Error('LLM API key not configured');
     }
   }
 
@@ -100,10 +100,10 @@ async function callLLM({ payload, prompt, model, apiUrl, apiKey, nodeType }) {
             }
           } else {
             // 其他字段正常处理
-            if (typeof value === 'object' && !Buffer.isBuffer(value)) {
-              formData.append(key, JSON.stringify(value));
-            } else {
-              formData.append(key, value);
+          if (typeof value === 'object' && !Buffer.isBuffer(value)) {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, value);
             }
           }
         }

@@ -1,65 +1,118 @@
 <template>
   <div class="node-edit-page">
-    <div class="nodes-scroll-container" ref="scrollContainer">
-      <div class="nodes-track" :style="trackStyle">
+    <div
+      ref="scrollContainer"
+      class="nodes-scroll-container"
+    >
+      <div
+        class="nodes-track"
+        :style="trackStyle"
+      >
         <div 
           v-for="(node, index) in nodes" 
           :key="index"
+          ref="nodeCards"
           class="node-card"
           :class="{ 
             'focused-node': focusedNodeIndex === index,
             'collapsed-node': focusedNodeIndex !== index,
             'loading-node': node.loading
           }"
-          ref="nodeCards"
           @click="focusNode(index)"
         >
-          <div class="node-title">{{ node.title }}</div>  <!-- 直接显示预设的标题 -->
+          <div class="node-title">
+            {{ node.title }}
+          </div>  <!-- 直接显示预设的标题 -->
           
           <template v-if="focusedNodeIndex === index">
             <div class="input-section">
               <label>输入 Prompt:</label>
               <textarea
+                ref="textareas"
                 v-model="node.prompt"
                 :placeholder="node.placeholder || '请输入文字'"
                 rows="6"
-                ref="textareas"
+                :disabled="node.loading"
                 @focus="handleTextareaFocus(index)"
                 @input="(event) => adjustTextareaHeight(event.target)"
-                :disabled="node.loading"
-              ></textarea>
+              />
             </div>
 
             <div class="node-result">
               <h4>返回结果:</h4>
-              <div v-if="node.loading" class="loading-indicator">
+              <div
+                v-if="node.loading"
+                class="loading-indicator"
+              >
                 <p>正在生成结果，请稍候...</p>
-                <div class="spinner"></div>
+                <div class="spinner" />
               </div>
-              <div v-else-if="node.result" class="output-content" v-html="marked(node.result)"></div>
-              <p v-else class="no-result">点击"运行"按钮获取AI结果</p>
+              <div
+                v-else-if="node.result"
+                class="output-content"
+                v-html="marked(node.result)"
+              />
+              <p
+                v-else
+                class="no-result"
+              >
+                点击"运行"按钮获取AI结果
+              </p>
             </div>
 
             <div class="node-actions">
               <!-- 操作按钮保持不变 -->
-                <button 
+              <button 
                 class="redo-btn" 
-                @click.stop="redoNode(index)"
                 :disabled="node.loading"
+                @click.stop="redoNode(index)"
               >
                 <span>重做</span>
               </button>
-              <button 
-                class="download-btn" 
-                @click.stop="downloadResult(index)"
-                :disabled="!node.result || node.loading"
-              >
-                <span>下载结果</span>
-              </button>
+              
+              <!-- 如果是最后一个节点（文档生成），显示PDF导出按钮 -->
+              <template v-if="node.nodeId === 'step5_doc_generation'">
+                <button 
+                  class="preview-btn" 
+                  :disabled="!node.result || node.loading"
+                  title="预览HTML格式"
+                  @click.stop="previewHTML(node.result)"
+                >
+                  <span>👁️ 预览</span>
+                </button>
+                <button 
+                  class="export-pdf-btn" 
+                  :disabled="!node.result || node.loading"
+                  title="导出为精美的PDF报告"
+                  @click.stop="exportToPDF(node.result, '洞察引擎分析报告')"
+                >
+                  <span>📄 导出PDF</span>
+                </button>
+                <button 
+                  class="download-btn" 
+                  :disabled="!node.result || node.loading"
+                  title="导出为文本文件"
+                  @click.stop="downloadResult(index)"
+                >
+                  <span>📝 导出文本</span>
+                </button>
+              </template>
+              
+              <!-- 其他节点的常规下载按钮 -->
+              <template v-else>
+                <button 
+                  class="download-btn" 
+                  :disabled="!node.result || node.loading"
+                  @click.stop="downloadResult(index)"
+                >
+                  <span>下载结果</span>
+                </button>
+              </template>
+              
               <button 
                 class="continue-btn" 
-                @click.stop="focusNextNode"
                 :disabled="index === nodes.length - 1 || node.loading"
+                @click.stop="focusNextNode"
               >
                 <span>继续</span>
               </button>
@@ -73,19 +126,25 @@
               </p>
             </div>
           </template>
-          <div class="node-connector" v-if="index < nodes.length - 1"></div>
+          <div
+            v-if="index < nodes.length - 1"
+            class="node-connector"
+          />
         </div>
       </div>
     </div>
 
     <!-- 任务栏保持不变 -->
     <div class="task-bar">
-      <button class="exit-btn" @click="exitEditor">
+      <button
+        class="exit-btn"
+        @click="exitEditor"
+      >
         <span>退出</span>
       </button>
       
       <div class="progress-indicator">
-        <div class="progress-line"></div>
+        <div class="progress-line" />
         <div 
           v-for="(node, index) in nodes" 
           :key="'progress-'+index"
@@ -95,18 +154,21 @@
             'completed-dot': node.completed
           }"
           @click="focusNode(index)"
-        ></div>
+        />
       </div>
       
       <button 
         class="run-btn" 
-        @click="runAllNodes"
         :disabled="isAnyNodeLoading"
+        @click="runAllNodes"
       >
         <span v-if="isRunning">运行中...</span>
         <span v-else>运行全部</span>
       </button>
-      <button class="runCurrent-btn" @click="runCurrentNode">
+      <button
+        class="runCurrent-btn"
+        @click="runCurrentNode"
+      >
         <span v-if="nodes[focusedNodeIndex].loading">运行中...</span>
         <span v-else>运行</span>
       </button>
@@ -117,7 +179,8 @@
 <script setup>
 import { ref, onMounted, nextTick, computed } from 'vue';
 import { useRoute } from 'vue-router';
-import { marked } from 'marked'; 
+import { marked } from 'marked';
+import html2pdf from 'html2pdf.js'; 
 
 const route = useRoute();
 const agentId = ref(route.params.agentId || 'default-agent');
@@ -337,15 +400,549 @@ const downloadResult = (index) => {
   const result = nodes.value[index].result;
   if (!result) return;
   
-  const blob = new Blob([result], { type: 'text/plain' });
+  const node = nodes.value[index];
+  
+  // 如果是最后一个节点（文档生成），提供PDF导出选项
+  if (node.nodeId === 'step5_doc_generation') {
+    const userChoice = confirm('是否导出为PDF格式？\n点击"确定"导出PDF，点击"取消"导出文本文件。');
+    if (userChoice) {
+      exportToPDF(result, '洞察引擎分析报告');
+      return;
+    }
+  }
+  
+  // 默认导出为文本文件
+  const blob = new Blob([result], { type: 'text/plain; charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `节点${index + 1}_结果.txt`;
+  a.download = `${node.title}_${new Date().toLocaleDateString('zh-CN')}.txt`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+};
+
+// 导出PDF功能
+const exportToPDF = async (markdownContent, filename = '洞察引擎报告') => {
+  // 在函数开始就声明tempDiv变量
+  let tempDiv = null;
+  
+  try {
+    console.log('[PDF Export] 开始导出，内容长度:', markdownContent.length);
+    
+    // 检查内容是否为空
+    if (!markdownContent || markdownContent.trim().length === 0) {
+      alert('没有可导出的内容！请先生成报告内容。');
+      return;
+    }
+    
+    // 检查html2pdf库是否可用
+    if (!html2pdf) {
+      throw new Error('PDF导出库未正确加载，请刷新页面重试');
+    }
+    console.log('[PDF Export] html2pdf库已就绪');
+    
+    // 将Markdown转换为HTML
+    const htmlContent = marked(markdownContent);
+    console.log('[PDF Export] HTML转换完成，HTML长度:', htmlContent.length);
+    
+    // 创建一个临时的div元素来渲染HTML
+    tempDiv = document.createElement('div');
+    
+    // 先设置基本样式
+    tempDiv.style.cssText = `
+      font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px;
+      background: white;
+      box-sizing: border-box;
+    `;
+    
+    // 然后设置HTML内容
+    tempDiv.innerHTML = htmlContent;
+    
+    // 验证内容是否正确设置
+    if (!tempDiv.innerHTML || tempDiv.innerHTML.trim().length === 0) {
+      throw new Error('HTML内容转换失败，无法生成PDF');
+    }
+    
+    // 添加自定义样式
+    const style = document.createElement('style');
+    style.textContent = `
+      h1, h2, h3, h4, h5, h6 {
+        color: #2c3e50;
+        margin-top: 1.5em;
+        margin-bottom: 0.5em;
+        font-weight: 600;
+      }
+      h1 {
+        font-size: 2.2em;
+        border-bottom: 3px solid #3498db;
+        padding-bottom: 0.3em;
+      }
+      h2 {
+        font-size: 1.8em;
+        border-bottom: 2px solid #e74c3c;
+        padding-bottom: 0.2em;
+      }
+      h3 {
+        font-size: 1.4em;
+        color: #e67e22;
+      }
+      p {
+        margin-bottom: 1em;
+        text-align: justify;
+      }
+      ul, ol {
+        margin-bottom: 1em;
+        padding-left: 2em;
+      }
+      li {
+        margin-bottom: 0.5em;
+      }
+      strong {
+        color: #2c3e50;
+        font-weight: 600;
+      }
+      em {
+        color: #7f8c8d;
+      }
+      blockquote {
+        border-left: 4px solid #3498db;
+        margin: 1em 0;
+        padding-left: 1em;
+        color: #7f8c8d;
+        font-style: italic;
+      }
+      code {
+        background-color: #f8f9fa;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 0.9em;
+      }
+      pre {
+        background-color: #2c3e50;
+        color: #ecf0f1;
+        padding: 1em;
+        border-radius: 5px;
+        overflow-x: auto;
+        margin: 1em 0;
+      }
+      pre code {
+        background: none;
+        color: inherit;
+        padding: 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1em 0;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 0.8em;
+        text-align: left;
+      }
+      th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+      }
+      hr {
+        border: none;
+        height: 2px;
+        background: linear-gradient(to right, #3498db, #e74c3c);
+        margin: 2em 0;
+      }
+    `;
+    tempDiv.appendChild(style);
+    
+    // 将临时div添加到body中（可见，用于调试）
+    tempDiv.style.position = 'fixed';
+    tempDiv.style.top = '0';
+    tempDiv.style.left = '0';
+    tempDiv.style.width = '210mm'; // A4宽度
+    tempDiv.style.height = 'auto';
+    tempDiv.style.backgroundColor = 'white';
+    tempDiv.style.zIndex = '9999';
+    tempDiv.style.overflow = 'auto';
+    tempDiv.style.border = '2px solid red'; // 调试边框
+    document.body.appendChild(tempDiv);
+    
+    console.log('[PDF Export] 临时元素已添加到DOM，内容预览:', tempDiv.textContent.substring(0, 200));
+    console.log('[PDF Export] 临时元素HTML长度:', tempDiv.innerHTML.length);
+    console.log('[PDF Export] 临时元素offsetHeight:', tempDiv.offsetHeight);
+    console.log('[PDF Export] 临时元素offsetWidth:', tempDiv.offsetWidth);
+    
+    // 等待DOM更新和样式应用
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // PDF导出选项 - 简化配置
+    const opt = {
+      margin: 1,
+      filename: `${filename}_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { 
+        scale: 1,
+        useCORS: true,
+        logging: true
+      },
+      jsPDF: { 
+        unit: 'in', 
+        format: 'letter', 
+        orientation: 'portrait' 
+      }
+    };
+    
+    console.log('[PDF Export] 开始生成PDF，配置:', opt);
+    console.log('[PDF Export] 目标元素:', tempDiv);
+    
+    try {
+      // 方法1：使用真实内容但简化配置
+      console.log('[PDF Export] 尝试方法1：使用真实内容');
+      
+      const simpleOpt = {
+        margin: 10,
+        filename: `${filename}_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.pdf`,
+        image: { type: 'jpeg', quality: 0.9 },
+        html2canvas: { 
+          scale: 1,
+          useCORS: true,
+          logging: false,
+          scrollX: 0,
+          scrollY: 0
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'portrait' 
+        }
+      };
+      
+      await html2pdf().set(simpleOpt).from(tempDiv).save();
+      console.log('[PDF Export] 方法1成功');
+      
+    } catch (method1Error) {
+      console.warn('[PDF Export] 方法1失败，尝试方法2:', method1Error);
+      
+      try {
+        // 方法2：更简化的配置
+        console.log('[PDF Export] 尝试方法2：更简化配置');
+        const simpleOpt2 = {
+          margin: 10,
+          filename: `${filename}_simple.pdf`,
+          html2canvas: { scale: 1 },
+          jsPDF: { format: 'a4' }
+        };
+        
+        await html2pdf().set(simpleOpt2).from(tempDiv).save();
+        console.log('[PDF Export] 方法2成功');
+        
+      } catch (method2Error) {
+        console.warn('[PDF Export] 方法2失败，尝试方法3:', method2Error);
+        
+        try {
+          // 方法3：使用纯文本内容
+          console.log('[PDF Export] 尝试方法3：纯文本内容');
+          const plainDiv = document.createElement('div');
+          // 更好的文本处理，保留基本格式
+          const plainContent = markdownContent
+            .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+            .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+            .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/\n/g, '<br>')
+            .replace(/^- (.*$)/gm, '<li>$1</li>')
+            .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+          
+          plainDiv.innerHTML = plainContent;
+          plainDiv.style.width = '190mm';
+          plainDiv.style.padding = '10mm';
+          plainDiv.style.fontFamily = 'Arial, sans-serif';
+          plainDiv.style.fontSize = '12px';
+          plainDiv.style.lineHeight = '1.5';
+          plainDiv.style.background = 'white';
+          document.body.appendChild(plainDiv);
+          
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          await html2pdf().set({
+            margin: 10,
+            filename: `${filename}_plain.pdf`,
+            html2canvas: { scale: 1 },
+            jsPDF: { format: 'a4' }
+          }).from(plainDiv).save();
+          
+          document.body.removeChild(plainDiv);
+          console.log('[PDF Export] 方法3成功');
+          
+        } catch (method3Error) {
+          console.error('[PDF Export] 所有方法都失败:', method3Error);
+          throw new Error('PDF导出失败：所有方法都无法工作');
+        }
+      }
+    }
+    
+    console.log('[PDF Export] PDF导出成功');
+    
+  } catch (error) {
+    console.error('[PDF Export] PDF导出失败:', error);
+    console.error('[PDF Export] 错误类型:', error.constructor.name);
+    console.error('[PDF Export] 错误堆栈:', error.stack);
+    
+    // 提供更详细的错误信息
+    let errorMessage = 'PDF导出失败';
+    if (error.message.includes('html2pdf')) {
+      errorMessage += '：PDF生成库加载失败，请刷新页面重试';
+    } else if (error.message.includes('HTML内容转换失败')) {
+      errorMessage += '：内容格式转换失败，请检查报告内容';
+    } else if (error.message.includes('Cannot read properties')) {
+      errorMessage += '：DOM元素访问失败，请重试';
+    } else if (error.message.includes('jsPDF')) {
+      errorMessage += '：PDF生成引擎错误，请重试';
+    } else if (error.message.includes('html2canvas')) {
+      errorMessage += '：页面渲染失败，请重试';
+    } else {
+      errorMessage += `：${error.message}`;
+    }
+    
+    // 显示详细错误信息供调试
+    console.log('[PDF Export] 详细错误信息:', {
+      message: error.message,
+      stack: error.stack,
+      tempDivExists: !!tempDiv,
+      tempDivInDOM: tempDiv && tempDiv.parentNode ? true : false,
+      markdownContentLength: markdownContent.length,
+      html2pdfAvailable: typeof html2pdf !== 'undefined'
+    });
+    
+    const shouldFallback = confirm(`${errorMessage}\n\n是否改为下载Markdown文件？\n点击"确定"下载Markdown，点击"取消"取消操作。`);
+    
+    if (shouldFallback) {
+      // 降级处理：导出为Markdown文件
+      const blob = new Blob([markdownContent], { type: 'text/plain; charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${filename}_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      console.log('[PDF Export] 已降级为Markdown文件下载');
+    }
+  } finally {
+    // 确保清理临时元素
+    if (tempDiv && tempDiv.parentNode) {
+      tempDiv.parentNode.removeChild(tempDiv);
+      console.log('[PDF Export] 临时元素已清理');
+    }
+  }
+};
+
+// HTML预览功能
+const previewHTML = (markdownContent) => {
+  if (!markdownContent || markdownContent.trim().length === 0) {
+    alert('没有可预览的内容！');
+    return;
+  }
+  
+  try {
+    console.log('[HTML Preview] 原始Markdown内容长度:', markdownContent.length);
+    console.log('[HTML Preview] 原始Markdown内容预览:', markdownContent.substring(0, 200));
+    
+    // 检查marked库是否可用
+    if (typeof marked !== 'function') {
+      throw new Error('Markdown解析库未正确加载');
+    }
+    
+    // 配置marked选项
+    marked.setOptions({
+      breaks: true,
+      gfm: true,
+      sanitize: false,
+      smartLists: true,
+      smartypants: false
+    });
+    
+    const htmlContent = marked(markdownContent);
+    console.log('[HTML Preview] 转换的HTML内容长度:', htmlContent.length);
+    console.log('[HTML Preview] 转换的HTML内容预览:', htmlContent.substring(0, 500));
+    
+    // 验证HTML内容是否为空
+    if (!htmlContent || htmlContent.trim().length === 0) {
+      throw new Error('Markdown转换后的HTML内容为空');
+    }
+    
+    // 创建预览窗口
+    const previewWindow = window.open('', '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
+    
+    if (!previewWindow) {
+      alert('无法打开预览窗口，请检查浏览器是否阻止了弹窗。');
+      return;
+    }
+    
+    // 构建完整的HTML文档
+    const fullHtmlDoc = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>洞察引擎报告预览</title>
+  <style>
+    body {
+      font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px;
+      background: #f9f9f9;
+    }
+    .content {
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1, h2, h3, h4, h5, h6 {
+      color: #2c3e50;
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+      font-weight: 600;
+    }
+    h1 {
+      font-size: 2.2em;
+      border-bottom: 3px solid #3498db;
+      padding-bottom: 0.3em;
+      margin-top: 0;
+    }
+    h2 {
+      font-size: 1.8em;
+      border-bottom: 2px solid #e74c3c;
+      padding-bottom: 0.2em;
+    }
+    h3 {
+      font-size: 1.4em;
+      color: #e67e22;
+    }
+    p {
+      margin-bottom: 1em;
+      text-align: justify;
+    }
+    ul, ol {
+      margin-bottom: 1em;
+      padding-left: 2em;
+    }
+    li {
+      margin-bottom: 0.5em;
+    }
+    strong {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+    em {
+      color: #7f8c8d;
+    }
+    blockquote {
+      border-left: 4px solid #3498db;
+      margin: 1em 0;
+      padding-left: 1em;
+      color: #7f8c8d;
+      font-style: italic;
+      background: #f8f9fa;
+      padding: 1em;
+    }
+    code {
+      background-color: #f8f9fa;
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.9em;
+      color: #e74c3c;
+    }
+    pre {
+      background-color: #2c3e50;
+      color: #ecf0f1;
+      padding: 1em;
+      border-radius: 5px;
+      overflow-x: auto;
+      margin: 1em 0;
+    }
+    pre code {
+      background: none;
+      color: inherit;
+      padding: 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1em 0;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 0.8em;
+      text-align: left;
+    }
+    th {
+      background-color: #f8f9fa;
+      font-weight: 600;
+    }
+    hr {
+      border: none;
+      height: 2px;
+      background: linear-gradient(to right, #3498db, #e74c3c);
+      margin: 2em 0;
+    }
+    .debug-info {
+      background: #fffbe6;
+      border: 1px solid #fadb14;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 12px;
+      color: #595959;
+    }
+  </style>
+</head>
+<body>
+  <div class="debug-info">
+    <strong>调试信息：</strong>
+    原始内容长度: ${markdownContent.length} 字符 | 
+    HTML内容长度: ${htmlContent.length} 字符 | 
+    生成时间: ${new Date().toLocaleString('zh-CN')}
+  </div>
+  <div class="content">
+    ${htmlContent}
+  </div>
+</body>
+</html>`;
+    
+    console.log('[HTML Preview] 完整HTML文档构建完成');
+    
+    // 写入HTML内容
+    previewWindow.document.write(fullHtmlDoc);
+    previewWindow.document.close();
+    previewWindow.focus();
+    
+    console.log('[HTML Preview] 预览窗口已打开');
+    
+  } catch (error) {
+    console.error('[HTML Preview] 预览失败:', error);
+    console.error('[HTML Preview] 错误详细信息:', {
+      message: error.message,
+      stack: error.stack,
+      markedAvailable: typeof marked !== 'undefined',
+      contentLength: markdownContent ? markdownContent.length : 0
+    });
+    alert('预览失败：' + error.message + '\n\n请检查浏览器控制台获取更多详细信息。');
+  }
 };
 
 // 调用后端API
@@ -449,20 +1046,66 @@ const transferDataBetweenNodes = (fromIndex, toIndex) => {
   
   // 对于文本分析工作流，大部分都是文本到文本的传递
   if (toModality.input === 'text') {
-    // 根据具体节点类型添加上下文提示
-    const nodePrompts = {
-      'step2_social_analysis': `基于以下市场分析结果，请进行社交媒体热点分析：\n\n${fromNode.result}`,
-      'step3_competitor_research': `基于以下分析结果，请进行竞品调研：\n\n${fromNode.result}`,
-      'step4_challenge_opportunity': `基于以下分析结果，请总结现状挑战与机遇：\n\n${fromNode.result}`,
-      'step5_doc_generation': `基于以上所有分析结果，请生成完整的分析文档：\n\n${fromNode.result}`
-    };
-    
-    toNode.prompt = nodePrompts[toNode.nodeId] || fromNode.result;
+    // 特殊处理最后一个节点（文档生成）：整合所有前面的结果
+    if (toNode.nodeId === 'step5_doc_generation') {
+      const allResults = generateComprehensiveReport();
+      toNode.prompt = allResults;
+    } else {
+      // 根据具体节点类型添加上下文提示
+      const nodePrompts = {
+        'step2_social_analysis': `基于以下市场分析结果，请进行社交媒体热点分析：\n\n${fromNode.result}`,
+        'step3_competitor_research': `基于以下分析结果，请进行竞品调研：\n\n${fromNode.result}`,
+        'step4_challenge_opportunity': `基于以下分析结果，请总结现状挑战与机遇：\n\n${fromNode.result}`
+      };
+      
+      toNode.prompt = nodePrompts[toNode.nodeId] || fromNode.result;
+    }
   } else {
     toNode.prompt = fromNode.result;
   }
   
   return true;
+};
+
+// 生成综合报告：整合所有前面节点的结果
+const generateComprehensiveReport = () => {
+  const reportSections = [];
+  const currentDate = new Date().toLocaleDateString('zh-CN');
+  
+  // 报告标题
+  reportSections.push(`# 洞察引擎分析报告\n\n**生成日期**: ${currentDate}\n\n---\n`);
+  
+  // 整合各个节点的结果
+  nodes.value.forEach((node, index) => {
+    if (node.completed && node.result && node.nodeId !== 'step5_doc_generation') {
+      let sectionTitle = '';
+      let sectionContent = node.result;
+      
+      switch (node.nodeId) {
+        case 'step1_analyze_market':
+          sectionTitle = '## 1. 市场数据分析';
+          break;
+        case 'step2_social_analysis':
+          sectionTitle = '## 2. 社交媒体热点分析';
+          break;
+        case 'step3_competitor_research':
+          sectionTitle = '## 3. 竞品调研分析';
+          break;
+        case 'step4_challenge_opportunity':
+          sectionTitle = '## 4. 现状挑战与机遇';
+          break;
+        default:
+          sectionTitle = `## ${index + 1}. ${node.title}`;
+      }
+      
+      reportSections.push(`${sectionTitle}\n\n${sectionContent}\n\n---\n`);
+    }
+  });
+  
+  // 添加综合总结提示
+  reportSections.push(`\n## 5. 综合总结与建议\n\n基于以上分析，请生成一份包含以下内容的综合报告：\n\n1. **执行摘要** - 核心发现的简明总结\n2. **关键洞察** - 从各个维度分析得出的主要洞察\n3. **战略建议** - 基于分析结果的可执行建议\n4. **风险评估** - 潜在风险和应对策略\n5. **后续行动计划** - 具体的实施步骤和时间安排\n\n请确保报告结构清晰，内容具有可操作性，并使用适当的Markdown格式进行排版。`);
+  
+  return reportSections.join('\n');
 };
 
 // 在数据传递后调用高度调整
@@ -920,6 +1563,86 @@ h2 {
   100% { transform: rotate(360deg); }
 }
 
+/* PDF导出按钮样式 */
+.export-pdf-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 预览按钮样式 */
+.preview-btn {
+  background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(82, 196, 26, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.preview-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.4);
+}
+
+.preview-btn:active {
+  transform: translateY(0);
+}
+
+.preview-btn:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.export-pdf-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.export-pdf-btn:active {
+  transform: translateY(0);
+}
+
+.export-pdf-btn:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* 为文档生成节点的按钮区域优化布局 */
+.node-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+
+/* 在文档生成节点中，按钮可能较多，优化布局 */
+.node-actions button {
+  flex: 1;
+  min-width: 100px;
+  max-width: 140px;
+}
+
 @media (max-width: 768px) {
   .node-card {
     width: 300px;
@@ -938,6 +1661,17 @@ h2 {
   .nodes-scroll-container {
     padding: 40px calc(50% - 150px); /* 小屏幕调整 */
     align-items: flex-start; /* 顶部对齐 */
+  }
+  
+  /* 小屏幕上的按钮布局优化 */
+  .node-actions {
+    gap: 6px;
+  }
+  
+  .node-actions button {
+    font-size: 12px;
+    padding: 8px 12px;
+    min-width: 80px;
   }
 }
 

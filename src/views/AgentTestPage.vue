@@ -2,12 +2,22 @@
   <div class="agent-test-page">
     <h2>Agent API Test</h2>
     <div class="input-section">
-      <textarea v-model="prompt" placeholder="输入 Prompt" rows="4" cols="40" />
+      <textarea
+        v-model="prompt"
+        placeholder="输入 Prompt"
+        rows="4"
+        cols="40"
+      />
     </div>
-    <button @click="runAgent">发送</button>
+    <button @click="runAgent">
+      发送
+    </button>
     <div class="output-section">
       <h3>输出</h3>
-      <div class="output-content" v-html="renderedResult"></div>
+      <div
+        class="output-content"
+        v-html="renderedResult"
+      />
     </div>
   </div>
 </template>

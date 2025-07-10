@@ -7,32 +7,57 @@
       <div class="filter-section">
         <div class="filter-group">
           <label>筛选:</label>
-          <select v-model="filters.status" @change="loadHistory">
-            <option value="">全部状态</option>
-            <option value="completed">已完成</option>
-            <option value="running">运行中</option>
-            <option value="failed">失败</option>
+          <select
+            v-model="filters.status"
+            @change="loadHistory"
+          >
+            <option value="">
+              全部状态
+            </option>
+            <option value="completed">
+              已完成
+            </option>
+            <option value="running">
+              运行中
+            </option>
+            <option value="failed">
+              失败
+            </option>
           </select>
         </div>
         
         <div class="filter-group">
           <label>排序:</label>
-          <select v-model="filters.sortBy" @change="loadHistory">
-            <option value="create_time">创建时间</option>
-            <option value="update_time">更新时间</option>
-            <option value="run_name">运行名称</option>
+          <select
+            v-model="filters.sortBy"
+            @change="loadHistory"
+          >
+            <option value="create_time">
+              创建时间
+            </option>
+            <option value="update_time">
+              更新时间
+            </option>
+            <option value="run_name">
+              运行名称
+            </option>
           </select>
         </div>
         
         <div class="search-group">
           <input 
-            type="text" 
             v-model="filters.search" 
+            type="text" 
             placeholder="搜索IP项目名称..." 
-            @input="debouncedSearch"
             class="search-input"
+            @input="debouncedSearch"
           >
-          <button @click="loadHistory" class="search-btn">搜索</button>
+          <button
+            class="search-btn"
+            @click="loadHistory"
+          >
+            搜索
+          </button>
         </div>
       </div>
     </div>
@@ -52,16 +77,33 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="record in historyList" :key="record.run_id" class="table-row">
+          <tr
+            v-for="record in historyList"
+            :key="record.run_id"
+            class="table-row"
+          >
             <td>
               <div class="project-info">
                 <div class="project-icon">
-                  <img v-if="record.thumbnail" :src="record.thumbnail" alt="项目图标">
-                  <div v-else class="default-icon">📋</div>
+                  <img
+                    v-if="record.thumbnail"
+                    :src="record.thumbnail"
+                    alt="项目图标"
+                  >
+                  <div
+                    v-else
+                    class="default-icon"
+                  >
+                    📋
+                  </div>
                 </div>
                 <div class="project-details">
-                  <div class="project-name">{{ record.run_name || '未命名项目' }}</div>
-                  <div class="project-desc">{{ truncateText(record.agent_description, 30) }}</div>
+                  <div class="project-name">
+                    {{ record.run_name || '未命名项目' }}
+                  </div>
+                  <div class="project-desc">
+                    {{ truncateText(record.agent_description, 30) }}
+                  </div>
                 </div>
               </div>
             </td>
@@ -73,8 +115,12 @@
             </td>
             <td>
               <div class="time-info">
-                <div class="date">{{ formatDate(record.create_time) }}</div>
-                <div class="time">{{ formatTime(record.create_time) }}</div>
+                <div class="date">
+                  {{ formatDate(record.create_time) }}
+                </div>
+                <div class="time">
+                  {{ formatTime(record.create_time) }}
+                </div>
               </div>
             </td>
             <td>
@@ -84,22 +130,37 @@
             </td>
             <td>
               <div class="format-info">
-                <span v-if="record.node_count > 0" class="format-tag">
+                <span
+                  v-if="record.node_count > 0"
+                  class="format-tag"
+                >
                   {{ getFormatText(record) }}
                 </span>
-                <span v-else class="format-tag empty">无输出</span>
+                <span
+                  v-else
+                  class="format-tag empty"
+                >无输出</span>
               </div>
             </td>
             <td>
               <div class="action-buttons">
-                <button @click="viewDetails(record)" class="action-btn view-btn">
+                <button
+                  class="action-btn view-btn"
+                  @click="viewDetails(record)"
+                >
                   查看
                 </button>
-                <button @click="downloadResults(record)" class="action-btn download-btn" 
-                        :disabled="record.status !== 'completed'">
+                <button
+                  class="action-btn download-btn"
+                  :disabled="record.status !== 'completed'" 
+                  @click="downloadResults(record)"
+                >
                   下载
                 </button>
-                <button @click="deleteRecord(record)" class="action-btn delete-btn">
+                <button
+                  class="action-btn delete-btn"
+                  @click="deleteRecord(record)"
+                >
                   删除
                 </button>
               </div>
@@ -109,21 +170,32 @@
       </table>
 
       <!-- 空状态 -->
-      <div v-if="!loading && historyList.length === 0" class="empty-state">
-        <div class="empty-icon">📝</div>
+      <div
+        v-if="!loading && historyList.length === 0"
+        class="empty-state"
+      >
+        <div class="empty-icon">
+          📝
+        </div>
         <h3>暂无历史记录</h3>
         <p>开始使用IP活化引擎创建您的第一个项目吧！</p>
       </div>
 
       <!-- 加载状态 -->
-      <div v-if="loading" class="loading-state">
-        <div class="spinner"></div>
+      <div
+        v-if="loading"
+        class="loading-state"
+      >
+        <div class="spinner" />
         <p>正在加载历史记录...</p>
       </div>
     </div>
 
     <!-- 分页器 -->
-    <div class="pagination-container" v-if="pagination.total > 0">
+    <div
+      v-if="pagination.total > 0"
+      class="pagination-container"
+    >
       <div class="pagination-info">
         显示第 {{ (pagination.page - 1) * pagination.limit + 1 }} - 
         {{ Math.min(pagination.page * pagination.limit, pagination.total) }} 条，
@@ -131,9 +203,9 @@
       </div>
       <div class="pagination-controls">
         <button 
-          @click="changePage(pagination.page - 1)" 
-          :disabled="pagination.page <= 1"
+          :disabled="pagination.page <= 1" 
           class="page-btn"
+          @click="changePage(pagination.page - 1)"
         >
           上一页
         </button>
@@ -142,17 +214,17 @@
           <button 
             v-for="page in getPageNumbers()" 
             :key="page"
-            @click="changePage(page)"
             :class="['page-num', { active: page === pagination.page }]"
+            @click="changePage(page)"
           >
             {{ page }}
           </button>
         </span>
         
         <button 
-          @click="changePage(pagination.page + 1)" 
-          :disabled="pagination.page >= pagination.pages"
+          :disabled="pagination.page >= pagination.pages" 
           class="page-btn"
+          @click="changePage(pagination.page + 1)"
         >
           下一页
         </button>
@@ -160,14 +232,29 @@
     </div>
 
     <!-- 详情弹窗 -->
-    <div v-if="showDetailModal" class="modal-overlay" @click="closeDetailModal">
-      <div class="modal-content" @click.stop>
+    <div
+      v-if="showDetailModal"
+      class="modal-overlay"
+      @click="closeDetailModal"
+    >
+      <div
+        class="modal-content"
+        @click.stop
+      >
         <div class="modal-header">
           <h3>运行详情</h3>
-          <button @click="closeDetailModal" class="close-btn">×</button>
+          <button
+            class="close-btn"
+            @click="closeDetailModal"
+          >
+            ×
+          </button>
         </div>
         <div class="modal-body">
-          <div v-if="selectedRecord" class="detail-content">
+          <div
+            v-if="selectedRecord"
+            class="detail-content"
+          >
             <div class="basic-info">
               <h4>基本信息</h4>
               <div class="info-grid">
@@ -192,10 +279,17 @@
               </div>
             </div>
 
-            <div v-if="selectedRecord.nodes && selectedRecord.nodes.length > 0" class="nodes-info">
+            <div
+              v-if="selectedRecord.nodes && selectedRecord.nodes.length > 0"
+              class="nodes-info"
+            >
               <h4>节点执行记录</h4>
               <div class="nodes-list">
-                <div v-for="(node, index) in selectedRecord.nodes" :key="index" class="node-item">
+                <div
+                  v-for="(node, index) in selectedRecord.nodes"
+                  :key="index"
+                  class="node-item"
+                >
                   <div class="node-header">
                     <span class="node-name">{{ node.node_name }}</span>
                     <span class="node-time">{{ formatTime(node.create_time) }}</span>

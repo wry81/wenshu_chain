@@ -3,7 +3,11 @@
   <div class="main-layout">
     <header class="top-navbar">
       <div class="navbar-left">
-        <img src="../assets/logo-with-text.png" alt="文枢链 Logo" class="navbar-logo" />
+        <img
+          src="../assets/logo-with-text.png"
+          alt="文枢链 Logo"
+          class="navbar-logo"
+        >
       </div>
 
       <div class="navbar-right-group">
@@ -41,50 +45,83 @@
         </nav>
         <div class="navbar-right">
           <button class="top-nav-icon-btn">
-            <img src="../assets/earth.svg" alt="灵感" />
+            <img
+              src="../assets/earth.svg"
+              alt="灵感"
+            >
           </button>
           <button class="top-nav-icon-btn">
-            <img src="../assets/search.svg" alt="搜索" />
+            <img
+              src="../assets/search.svg"
+              alt="搜索"
+            >
           </button>
           <button class="top-nav-avartar">
-            <img src="../assets/avartar.svg" alt="用户" />
+            <img
+              src="../assets/avartar.svg"
+              alt="用户"
+            >
           </button>
         </div>
       </div>
     </header>
 
     <div class="content-wrapper">
-      <aside class="sidebar" :class="{ 'sidebar-collapsed': !showSidebar }">
-        <div class="sidebar-header" :class="{ 'sidebar-header-collapsed': !showSidebar }">
-          <button class="hamburger-menu-btn" @click="toggleSidebar">
-            <img src="../assets/menu.svg" alt="菜单" />
+      <aside
+        class="sidebar"
+        :class="{ 'sidebar-collapsed': !showSidebar }"
+      >
+        <div
+          class="sidebar-header"
+          :class="{ 'sidebar-header-collapsed': !showSidebar }"
+        >
+          <button
+            class="hamburger-menu-btn"
+            @click="toggleSidebar"
+          >
+            <img
+              src="../assets/menu.svg"
+              alt="菜单"
+            >
           </button>
-          </div>
+        </div>
 
         <ul class="sidebar-menu">
           <template v-if="currentTopNav === 'insight-engine'">
             <li
               :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentInsightSidebarNav === '仪表盘' }]"
-              @click="handleSidebarClick('仪表盘', '/main/insight-engine/dashboard')"
               data-selected="仪表盘"
+              @click="handleSidebarClick('仪表盘', '/main/insight-engine/dashboard')"
             >
-              <img src="../assets/DashboardFilled.svg" alt="仪表盘" class="icon-left" />
+              <img
+                src="../assets/DashboardFilled.svg"
+                alt="仪表盘"
+                class="icon-left"
+              >
               <span v-if="showSidebar">仪表盘</span>
             </li>
             <li
               :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentInsightSidebarNav === '智能洞察' }]"
-              @click="handleSidebarClick('智能洞察', '/main/insight-engine/smart-insight')"
               data-selected="智能洞察"
+              @click="handleSidebarClick('智能洞察', '/main/insight-engine/smart-insight')"
             >
-              <img src="../assets/fire.svg" alt="智能洞察" class="icon-left" />
+              <img
+                src="../assets/fire.svg"
+                alt="智能洞察"
+                class="icon-left"
+              >
               <span v-if="showSidebar">智能洞察</span>
             </li>
             <li
               :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentInsightSidebarNav === '洞察历史' }]"
-              @click="handleSidebarClick('洞察历史', '/main/insight-engine/history')"
               data-selected="洞察历史"
+              @click="handleSidebarClick('洞察历史', '/main/insight-engine/history')"
             >
-              <img src="../assets/HistoryOutlined.svg" alt="洞察历史" class="icon-left" />
+              <img
+                src="../assets/HistoryOutlined.svg"
+                alt="洞察历史"
+                class="icon-left"
+              >
               <span v-if="showSidebar">洞察历史</span>
             </li>
           </template>
@@ -92,18 +129,26 @@
           <template v-else-if="currentTopNav === 'narrative-engine'">
             <li
               :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentNarrativeSidebarNav === '智能生成' }]"
-              @click="handleNarrativeSidebarClick('智能生成', '/main/narrative-engine/smart-generation')"
               data-selected="智能生成"
+              @click="handleNarrativeSidebarClick('智能生成', '/main/narrative-engine/smart-generation')"
             >
-              <img src="../assets/fire.svg" alt="智能生成" class="icon-left" />
+              <img
+                src="../assets/fire.svg"
+                alt="智能生成"
+                class="icon-left"
+              >
               <span v-if="showSidebar">智能生成</span>
             </li>
             <li
               :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentNarrativeSidebarNav === '生成历史' }]"
-              @click="handleNarrativeSidebarClick('生成历史', '/main/narrative-engine/generation-history')"
               data-selected="生成历史"
+              @click="handleNarrativeSidebarClick('生成历史', '/main/narrative-engine/generation-history')"
             >
-              <img src="../assets/HistoryOutlined.svg" alt="生成历史" class="icon-left" />
+              <img
+                src="../assets/HistoryOutlined.svg"
+                alt="生成历史"
+                class="icon-left"
+              >
               <span v-if="showSidebar">生成历史</span>
             </li>
           </template>
@@ -111,18 +156,26 @@
           <template v-else-if="currentTopNav === 'ip-activation-engine'">
             <li
               :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentNarrativeSidebarNav === '智能活化' }]"
-              @click="handleNarrativeSidebarClick('智能活化', '/main/ip-activation-engine/smart-active')"
               data-selected="智能活化"
+              @click="handleNarrativeSidebarClick('智能活化', '/main/ip-activation-engine/smart-active')"
             >
-              <img src="../assets/fire.svg" alt="智能活化" class="icon-left" />
+              <img
+                src="../assets/fire.svg"
+                alt="智能活化"
+                class="icon-left"
+              >
               <span v-if="showSidebar">智能活化</span>
             </li>
             <li
               :class="['sidebar-menu-item', { 'sidebar-menu-item-selected': currentNarrativeSidebarNav === '活化历史' }]"
-              @click="handleNarrativeSidebarClick('活化历史', '/main/ip-activation-engine/active-history')"
               data-selected="活化历史"
+              @click="handleNarrativeSidebarClick('活化历史', '/main/ip-activation-engine/active-history')"
             >
-              <img src="../assets/HistoryOutlined.svg" alt="活化历史" class="icon-left" />
+              <img
+                src="../assets/HistoryOutlined.svg"
+                alt="活化历史"
+                class="icon-left"
+              >
               <span v-if="showSidebar">活化历史</span>
             </li>
           </template>

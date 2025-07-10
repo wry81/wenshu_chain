@@ -16,8 +16,16 @@
         <span v-else-if="node.data.status === 'error'">✖</span>
         <span v-else>{{ node.data.step }}</span>
       </div>
-      <div class="step-label" :title="node.data.title">{{ node.data.step }}</div>
-      <div v-if="index < nodes.length - 1" class="step-line"></div>
+      <div
+        class="step-label"
+        :title="node.data.title"
+      >
+        {{ node.data.step }}
+      </div>
+      <div
+        v-if="index < nodes.length - 1"
+        class="step-line"
+      />
     </div>
   </div>
 </template>

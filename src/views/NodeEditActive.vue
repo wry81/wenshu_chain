@@ -1,37 +1,68 @@
 <template>
   <div class="node-edit-page">
-    <div class="nodes-scroll-container" ref="scrollContainer">
-      <div class="nodes-track" :style="trackStyle">
+    <div
+      ref="scrollContainer"
+      class="nodes-scroll-container"
+    >
+      <div
+        class="nodes-track"
+        :style="trackStyle"
+      >
         <div 
           v-for="(node, index) in nodes" 
           :key="index"
+          ref="nodeCards"
           class="node-card"
           :class="{ 
             'focused-node': focusedNodeIndex === index,
             'collapsed-node': focusedNodeIndex !== index,
             'loading-node': node.loading
           }"
-          ref="nodeCards"
           @click="focusNode(index)"
         >
-          <div class="node-title">{{ node.title }}</div>  <!-- 直接显示预设的标题 -->
+          <div class="node-title">
+            {{ node.title }}
+          </div>  <!-- 直接显示预设的标题 -->
           
           <template v-if="focusedNodeIndex === index">
             <div class="input-section">
               <label>输入 Prompt:</label>
               <!-- 在第一个节点和第三个节点添加图片上传 -->
-              <div v-if="index === 0 || index === 2" class="image-upload-section">
-                <div class="upload-area" @click="triggerFileInput">
-                  <div v-if="!node.imageData" class="upload-placeholder">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M19 13V19H5V13H3V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V13H19ZM13 5L11.59 6.41L13.17 8H5V10H13.17L11.58 11.59L13 13L17 9L13 5Z" fill="#4A90E2"/>
+              <div
+                v-if="index === 0 || index === 2"
+                class="image-upload-section"
+              >
+                <div
+                  class="upload-area"
+                  @click="triggerFileInput"
+                >
+                  <div
+                    v-if="!node.imageData"
+                    class="upload-placeholder"
+                  >
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M19 13V19H5V13H3V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V13H19ZM13 5L11.59 6.41L13.17 8H5V10H13.17L11.58 11.59L13 13L17 9L13 5Z"
+                        fill="#4A90E2"
+                      />
                     </svg>
                     <p>点击上传图片</p>
                   </div>
-                  <img v-else :src="node.imageData" alt="上传的图片" class="preview-image">
+                  <img
+                    v-else
+                    :src="node.imageData"
+                    alt="上传的图片"
+                    class="preview-image"
+                  >
                   <input 
-                    type="file" 
                     :ref="el => { if (el) fileInputs[index] = el }"
+                    type="file"
                     accept="image/*"
                     style="display: none"
                     @change="(event) => handleImageUpload(event, index)"
@@ -46,31 +77,62 @@
                 </button>
               </div>
               <textarea
+                ref="textareas"
                 v-model="node.prompt"
                 :placeholder="node.placeholder || '请输入文字'"
                 rows="6"
-                ref="textareas"
+                :disabled="node.loading"
                 @focus="handleTextareaFocus(index)"
                 @input="(event) => adjustTextareaHeight(event.target)"
-                :disabled="node.loading"
-              ></textarea>
+              />
             </div>
 
             <div class="node-result">
               <h4>返回结果:</h4>
-              <div v-if="node.loading" class="loading-indicator">
+              <div
+                v-if="node.loading"
+                class="loading-indicator"
+              >
                 <p>正在生成结果，请稍候...</p>
-                <div class="spinner"></div>
+                <div class="spinner" />
               </div>
               <template v-else-if="node.result">
-                 <div v-if="isImageUrl(node.result)" class="result-image-container">
-                  <img :src="node.result" alt="AI生成结果" class="result-image">
+                <div
+                  v-if="isImageUrl(node.result)"
+                  class="result-image-container"
+                >
+                  <img
+                    :src="node.result"
+                    alt="AI生成结果"
+                    class="result-image"
+                  >
                 </div>
-                 <div v-else-if="isAsyncTask(node.result)" class="result-async-task-container">
+                <div
+                  v-else-if="isAsyncTask(node.result)"
+                  class="result-async-task-container"
+                >
                   <div class="async-task-preview">
-                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="32" cy="32" r="24" stroke="#4A90E2" stroke-width="2" fill="none"/>
-                      <path d="M32 16v16l12 8" stroke="#4A90E2" stroke-width="2" fill="none"/>
+                    <svg
+                      width="64"
+                      height="64"
+                      viewBox="0 0 64 64"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <circle
+                        cx="32"
+                        cy="32"
+                        r="24"
+                        stroke="#4A90E2"
+                        stroke-width="2"
+                        fill="none"
+                      />
+                      <path
+                        d="M32 16v16l12 8"
+                        stroke="#4A90E2"
+                        stroke-width="2"
+                        fill="none"
+                      />
                     </svg>
                     <div class="async-task-info">
                       <pre>{{ node.result }}</pre>
@@ -78,8 +140,8 @@
                     <div class="async-task-actions">
                       <button 
                         class="task-status-btn" 
-                        @click="checkTaskStatus(index)"
                         :disabled="node.checkingStatus"
+                        @click="checkTaskStatus(index)"
                       >
                         <span v-if="node.checkingStatus">查询中...</span>
                         <span v-else>查询状态</span>
@@ -87,10 +149,17 @@
                     </div>
                   </div>
                 </div>
-                 <div v-else-if="isCompleted3DTask(node.result)" class="result-completed-3d-container">
+
+                <div
+                  v-else-if="isCompleted3DTask(node.result)"
+                  class="result-completed-3d-container"
+                >
                   <div class="completed-3d-preview">
                     <!-- 显示缩略图 -->
-                    <div class="thumbnail-container" v-if="JSON.parse(node.result).thumbnailUrl">
+                    <div
+                      v-if="JSON.parse(node.result).thumbnailUrl"
+                      class="thumbnail-container"
+                    >
                       <img 
                         :src="JSON.parse(node.result).thumbnailUrl" 
                         alt="3D模型预览"
@@ -98,11 +167,37 @@
                         @error="onThumbnailError"
                       >
                       <div class="thumbnail-overlay">
-                        <svg width="32" height="32" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M32 8L56 20V44L32 56L8 44V20L32 8Z" stroke="#ffffff" stroke-width="2" fill="none"/>
-                          <path d="M32 8V32L56 20" stroke="#ffffff" stroke-width="2" fill="none"/>
-                          <path d="M32 32L8 20" stroke="#ffffff" stroke-width="2" fill="none"/>
-                          <path d="M32 32V56" stroke="#ffffff" stroke-width="2" fill="none"/>
+                        <svg
+                          width="32"
+                          height="32"
+                          viewBox="0 0 64 64"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M32 8L56 20V44L32 56L8 44V20L32 8Z"
+                            stroke="#ffffff"
+                            stroke-width="2"
+                            fill="none"
+                          />
+                          <path
+                            d="M32 8V32L56 20"
+                            stroke="#ffffff"
+                            stroke-width="2"
+                            fill="none"
+                          />
+                          <path
+                            d="M32 32L8 20"
+                            stroke="#ffffff"
+                            stroke-width="2"
+                            fill="none"
+                          />
+                          <path
+                            d="M32 32V56"
+                            stroke="#ffffff"
+                            stroke-width="2"
+                            fill="none"
+                          />
                         </svg>
                       </div>
                     </div>
@@ -115,16 +210,16 @@
                       <!-- 操作按钮 -->
                       <div class="model-actions">
                         <button 
+                          v-if="JSON.parse(node.result).modelUrl"
                           class="download-model-btn"
                           @click="downloadModel(JSON.parse(node.result).modelUrl)"
-                          v-if="JSON.parse(node.result).modelUrl"
                         >
                           📦 下载3D模型
                         </button>
                         <button 
+                          v-if="JSON.parse(node.result).thumbnailUrl"
                           class="download-thumbnail-btn"
                           @click="downloadThumbnail(JSON.parse(node.result).thumbnailUrl)"
-                          v-if="JSON.parse(node.result).thumbnailUrl"
                         >
                           🖼️ 下载预览图
                         </button>
@@ -132,43 +227,128 @@
                     </div>
                   </div>
                 </div>
-                 <div v-else-if="isModelUrl(node.result)" class="result-model-container">
+                <div
+                  v-else-if="isModelUrl(node.result)"
+                  class="result-model-container"
+                >
                   <div class="model-preview">
-                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M32 8L56 20V44L32 56L8 44V20L32 8Z" stroke="#4A90E2" stroke-width="2" fill="none"/>
-                      <path d="M32 8V32L56 20" stroke="#4A90E2" stroke-width="2" fill="none"/>
-                      <path d="M32 32L8 20" stroke="#4A90E2" stroke-width="2" fill="none"/>
-                      <path d="M32 32V56" stroke="#4A90E2" stroke-width="2" fill="none"/>
+                    <svg
+                      width="64"
+                      height="64"
+                      viewBox="0 0 64 64"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M32 8L56 20V44L32 56L8 44V20L32 8Z"
+                        stroke="#4A90E2"
+                        stroke-width="2"
+                        fill="none"
+                      />
+                      <path
+                        d="M32 8V32L56 20"
+                        stroke="#4A90E2"
+                        stroke-width="2"
+                        fill="none"
+                      />
+                      <path
+                        d="M32 32L8 20"
+                        stroke="#4A90E2"
+                        stroke-width="2"
+                        fill="none"
+                      />
+                      <path
+                        d="M32 32V56"
+                        stroke="#4A90E2"
+                        stroke-width="2"
+                        fill="none"
+                      />
                     </svg>
                     <p>3D模型已生成</p>
-                    <a :href="node.result" target="_blank" class="model-link">查看/下载模型</a>
+                    <a
+                      :href="node.result"
+                      target="_blank"
+                      class="model-link"
+                    >查看/下载模型</a>
                   </div>
                 </div>
-                 <div v-else class="output-content" v-html="marked(node.result)"></div>
+                <!-- 强制兜底方案：必须在v-else之前，检查任务相关关键词 -->
+                <div
+                  v-else-if="node.result.includes('task_id') || node.result.includes('任务ID') || node.result.includes('task-') || node.result.includes('正在处理') || node.result.includes('334cddfe')"
+                  class="result-async-task-container"
+                >
+                  <div class="async-task-preview">
+                    <svg
+                      width="64"
+                      height="64"
+                      viewBox="0 0 64 64"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <circle
+                        cx="32"
+                        cy="32"
+                        r="24"
+                        stroke="#4A90E2"
+                        stroke-width="2"
+                        fill="none"
+                      />
+                      <path
+                        d="M32 16v16l12 8"
+                        stroke="#4A90E2"
+                        stroke-width="2"
+                        fill="none"
+                      />
+                    </svg>
+                    <div class="async-task-info">
+                      <pre>{{ node.result }}</pre>
+                    </div>
+                    <div class="async-task-actions">
+                      <button 
+                        class="task-status-btn" 
+                        :disabled="node.checkingStatus"
+                        @click="checkTaskStatus(index)"
+                      >
+                        <span v-if="node.checkingStatus">查询中...</span>
+                        <span v-else>查询状态</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  v-else
+                  class="output-content"
+                  v-html="marked(node.result)"
+                />
               </template>
-              <p v-else class="no-result">点击"运行"按钮获取AI结果</p>
+              <p
+                v-else
+                class="no-result"
+              >
+                点击"运行"按钮获取AI结果
+              </p>
             </div>
 
             <div class="node-actions">
               <!-- 操作按钮保持不变 -->
-                <button 
+              <button 
                 class="redo-btn" 
-                @click.stop="redoNode(index)"
                 :disabled="node.loading"
+                @click.stop="redoNode(index)"
               >
                 <span>重做</span>
               </button>
               <button 
                 class="download-btn" 
-                @click.stop="downloadResult(index)"
                 :disabled="!node.result || node.loading"
+                @click.stop="downloadResult(index)"
               >
                 <span>下载结果</span>
               </button>
               <button 
                 class="continue-btn" 
-                @click.stop="focusNextNode"
                 :disabled="index === nodes.length - 1 || node.loading"
+                @click.stop="focusNextNode"
               >
                 <span>继续</span>
               </button>
@@ -182,19 +362,25 @@
               </p>
             </div>
           </template>
-          <div class="node-connector" v-if="index < nodes.length - 1"></div>
+          <div
+            v-if="index < nodes.length - 1"
+            class="node-connector"
+          />
         </div>
       </div>
     </div>
 
     <!-- 任务栏保持不变 -->
     <div class="task-bar">
-      <button class="exit-btn" @click="exitEditor">
+      <button
+        class="exit-btn"
+        @click="exitEditor"
+      >
         <span>退出</span>
       </button>
       
       <div class="progress-indicator">
-        <div class="progress-line"></div>
+        <div class="progress-line" />
         <div 
           v-for="(node, index) in nodes" 
           :key="'progress-'+index"
@@ -204,18 +390,21 @@
             'completed-dot': node.completed
           }"
           @click="focusNode(index)"
-        ></div>
+        />
       </div>
       
       <button 
         class="run-btn" 
-        @click="runAllNodes"
         :disabled="isAnyNodeLoading"
+        @click="runAllNodes"
       >
         <span v-if="isRunning">运行中...</span>
         <span v-else>运行全部</span>
       </button>
-      <button class="runCurrent-btn" @click="runCurrentNode">
+      <button
+        class="runCurrent-btn"
+        @click="runCurrentNode"
+      >
         <span v-if="nodes[focusedNodeIndex].loading">运行中...</span>
         <span v-else>运行当前节点</span>
       </button>
@@ -353,13 +542,22 @@ const isAsyncTask = (text) => {
     return true;
   }
   
+  // 检查是否包含其他可能的异步任务标识
+  if (text.includes('task_id') || text.includes('任务已提交') || text.includes('正在处理中')) {
+    return true;
+  }
+  
   // 检查是否为JSON格式的异步任务信息
   try {
     const parsed = JSON.parse(text);
-    return parsed.type === 'async_task' || parsed.task_id;
+    if (parsed.type === 'async_task' || parsed.task_id) {
+      return true;
+    }
   } catch (e) {
-    return false;
+    // JSON解析失败是正常的，因为很多结果不是JSON格式
   }
+  
+  return false;
 };
 
 // 添加完成的3D任务识别函数
@@ -407,11 +605,12 @@ const normalizeApiResult = (apiData) => {
   }
 
   // 4) 检查是否为异步任务信息（JSON字符串）
-  if (raw.startsWith('{') && raw.includes('async_task')) {
+  if (raw.startsWith('{') && (raw.includes('async_task') || raw.includes('task_id'))) {
     try {
       const taskInfo = JSON.parse(raw);
-      if (taskInfo.type === 'async_task') {
-        return `🔄 ${taskInfo.message}\n\n📋 任务ID: ${taskInfo.task_id}\n📡 状态: ${taskInfo.status}\n\n💡 ${taskInfo.note || '3D模型生成通常需要1-5分钟，请耐心等待。'}\n\n⚠️ 注意：监控端点需要API密钥认证，不能直接在浏览器中访问。`;
+      if (taskInfo.type === 'async_task' || taskInfo.task_id) {
+        const formatResult = `🔄 ${taskInfo.message || '3D模型生成任务已提交'}\n\n📋 任务ID: ${taskInfo.task_id}\n📡 状态: ${taskInfo.status || 'processing'}\n\n💡 ${taskInfo.note || '3D模型生成通常需要1-5分钟，请耐心等待。'}\n\n⚠️ 注意：监控端点需要API密钥认证，不能直接在浏览器中访问。`;
+        return formatResult;
       }
     } catch (e) {
       console.warn('解析异步任务信息失败:', e);
@@ -722,7 +921,7 @@ const callAgentApi = async (nodeIndex) => {
     const data = await response.json();
     const resultToShow = normalizeApiResult(data);
     node.result = resultToShow;
-
+    
     node.completed = true;
 
   } catch (error) {
@@ -1084,27 +1283,27 @@ onMounted(() => {
   
   // 监听滚动事件，实现更精确的节点焦点检测
   if (scrollContainer.value) {
-  scrollContainer.value.addEventListener('scroll', () => {
-    if (!nodeCards.value.length) return;
-    
-    // 只在滚动停止后检测（防抖）
-    clearTimeout(scrollTimeout);
-    scrollTimeout = setTimeout(() => {
-      const container = scrollContainer.value;
-      const scrollPosition = container.scrollLeft + container.clientWidth/2;
+    scrollContainer.value.addEventListener('scroll', () => {
+      if (!nodeCards.value.length) return;
       
-      // 使用getBoundingClientRect获取精确位置
-      nodeCards.value.forEach((card, index) => {
-        const rect = card.getBoundingClientRect();
-        const cardCenter = rect.left + rect.width/2 - container.getBoundingClientRect().left;
+    // 只在滚动停止后检测（防抖）
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        const container = scrollContainer.value;
+        const scrollPosition = container.scrollLeft + container.clientWidth/2;
         
+      // 使用getBoundingClientRect获取精确位置
+        nodeCards.value.forEach((card, index) => {
+          const rect = card.getBoundingClientRect();
+          const cardCenter = rect.left + rect.width/2 - container.getBoundingClientRect().left;
+          
         if (Math.abs(scrollPosition - cardCenter) < 10) { // 10px容差
-          focusedNodeIndex.value = index;
-        }
-      });
+            focusedNodeIndex.value = index;
+          }
+        });
     }, 100); // 100ms后认为滚动停止
-  });
-}
+    });
+  }
 });
 </script>
 
@@ -1187,9 +1386,12 @@ h2 {
   transform: scale(1);
   border: var(--theme-color-40) solid 3px;
   width: 600px;
-  height: 700px; /* 固定高度 */
-  max-height: 700px; /* 确保不超过600px */
+  height: auto; /* 改为自动高度 */
+  max-height: calc(100vh - 200px); /* 根据视口高度动态调整，留出200px给任务栏等 */
+  min-height: 500px; /* 设置最小高度保证基本可用性 */
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 /* 折叠卡片样式 */
 .collapsed-node {
@@ -1218,6 +1420,17 @@ h2 {
   width: calc(100% - 20px);
   margin: 0 10px;
 } */
+
+.node-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  margin-top: 15px;
+  flex-shrink: 0; /* 防止按钮区域被压缩 */
+  padding: 10px 0; /* 增加一些内边距 */
+  border-top: 1px solid #f0f0f0; /* 添加分隔线 */
+  background: white; /* 确保背景色 */
+}
 
 .loading-node {
   opacity: 0.8;
@@ -1276,10 +1489,12 @@ h2 {
 .node-result {
   margin-top: 20px;
   padding-top: 20px;
-  padding-bottom: 60px; /* 减少底部padding */
+  padding-bottom: 20px; /* 减少底部padding */
   border-top: 1px solid #eee;
   overflow-y: auto; /* 允许内容滚动 */
-  max-height: calc(100% - 350px); /* 调整最大高度，给输入区域留更多空间 */
+  flex: 1; /* 使用flex布局自动分配剩余空间 */
+  min-height: 200px; /* 最小高度保证可见性 */
+  max-height: calc(100vh - 450px); /* 根据视口高度限制最大高度 */
 }
 
 
@@ -1365,27 +1580,33 @@ h2 {
 
 .result-async-task-container {
   width: 100%;
-  min-height: 200px;
+  min-height: 150px; /* 减少最小高度以适应小屏幕 */
+  max-height: 300px; /* 限制最大高度 */
   display: flex;
   justify-content: center;
   align-items: center;
   border-radius: 6px;
   background: #f8f9fa;
   border: 1px solid #e9ecef;
-  padding: 20px;
+  padding: 15px; /* 减少内边距 */
+  overflow-y: auto; /* 添加滚动支持 */
 }
 
 .async-task-preview {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 15px;
+  gap: 10px; /* 减少间距 */
   width: 100%;
+  max-height: 100%; /* 确保不超出容器 */
 }
 
 .async-task-info {
   width: 100%;
   text-align: center;
+  flex: 1; /* 允许信息区域伸缩 */
+  overflow-y: auto; /* 如果内容过多则滚动 */
+  max-height: 200px; /* 限制信息区域的最大高度 */
 }
 
 .async-task-info pre {
@@ -1407,7 +1628,12 @@ h2 {
   display: flex;
   justify-content: center;
   gap: 10px;
-  margin-top: 15px;
+  margin-top: 10px; /* 减少上边距 */
+  flex-shrink: 0; /* 防止按钮区域被压缩 */
+  position: sticky; /* 粘性定位，确保按钮始终可见 */
+  bottom: 0;
+  background: #f8f9fa; /* 与容器背景一致 */
+  padding: 5px 0; /* 增加一些内边距 */
 }
 
 .task-status-btn {
@@ -1721,7 +1947,12 @@ h2 {
 @media (max-width: 768px) {
   .node-card {
     width: 300px;
-    min-height: 500px;
+    min-height: 400px; /* 减少最小高度 */
+  }
+  
+  .focused-node {
+    max-height: calc(100vh - 150px); /* 小屏幕上留更少空间给任务栏 */
+    min-height: 400px; /* 减少最小高度 */
   }
   
   .nodes-track {
@@ -1730,12 +1961,27 @@ h2 {
   
   .global-actions {
     flex-wrap: wrap;
-    justify-content: center;
+  justify-content: center;
   }
 
   .nodes-scroll-container {
     padding: 40px calc(50% - 150px); /* 小屏幕调整 */
     align-items: flex-start; /* 顶部对齐 */
+  }
+  
+  .node-result {
+    max-height: calc(100vh - 350px); /* 小屏幕上调整结果区域高度 */
+    min-height: 150px; /* 减少最小高度 */
+  }
+  
+  .result-async-task-container {
+    min-height: 120px; /* 进一步减少最小高度 */
+    max-height: 250px; /* 减少最大高度 */
+    padding: 10px; /* 减少内边距 */
+  }
+  
+  .async-task-info {
+    max-height: 150px; /* 小屏幕上减少信息区域高度 */
   }
   
   .model-actions {
@@ -1747,8 +1993,27 @@ h2 {
     width: 100%;
     justify-content: center;
   }
+}
 
+/* 专门针对高度较小的屏幕 */
+@media (max-height: 800px) {
+  .focused-node {
+    max-height: calc(100vh - 120px); /* 更紧凑的高度分配 */
+    min-height: 350px; /* 进一步减少最小高度 */
+  }
   
+  .node-result {
+    max-height: calc(100vh - 300px); /* 更紧凑的结果区域 */
+  }
+  
+  .result-async-task-container {
+    min-height: 100px; /* 最小化异步任务容器高度 */
+    max-height: 200px;
+  }
+  
+  .async-task-info {
+    max-height: 120px; /* 进一步压缩信息区域 */
+  }
 }
 
 </style>

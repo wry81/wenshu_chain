@@ -236,8 +236,8 @@ async function executeNode(node, input, additionalPrompt) {
         }
         // 按照OpenAI标准格式处理返回结果（兼容性）
         else if (result.choices?.[0]?.message?.content) {
-          return result.choices[0].message.content;
-        }
+        return result.choices[0].message.content;
+      }
         // 如果都没有，尝试直接转换为字符串
         else {
           console.warn('[agentService] 未能识别的multi-to-text响应格式:', result);

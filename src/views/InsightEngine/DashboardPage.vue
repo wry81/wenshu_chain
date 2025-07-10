@@ -1,60 +1,130 @@
 <template>
   <div class="dashboard-page">
     <div class="dashboard-header">
-      <h2 class="page-title">趋势追踪</h2>
+      <h2 class="page-title">
+        趋势追踪
+      </h2>
       <div class="header-actions">
-        <button class="filter-btn">筛选</button>
-        <button class="add-widget-btn">添加组件</button>
+        <button class="filter-btn">
+          筛选
+        </button>
+        <button class="add-widget-btn">
+          添加组件
+        </button>
       </div>
     </div>
 
     <div class="dashboard-grid">
       <div class="chart-card square">
-        <h3 class="chart-title">存储空间</h3>
+        <h3 class="chart-title">
+          存储空间
+        </h3>
         <div class="chart-container">
-          <DoughnutChart v-if="doughnutChartData" :data="doughnutChartData" :options="chartOptions" />
-          <div v-else class="loading-placeholder">加载存储空间分布图...</div>
+          <DoughnutChart
+            v-if="doughnutChartData"
+            :data="doughnutChartData"
+            :options="chartOptions"
+          />
+          <div
+            v-else
+            class="loading-placeholder"
+          >
+            加载存储空间分布图...
+          </div>
         </div>
       </div>
 
       <div class="chart-card square">
-        <h3 class="chart-title">资产分类</h3>
+        <h3 class="chart-title">
+          资产分类
+        </h3>
         <div class="chart-container">
-          <BarChart v-if="barChartData" :data="barChartData" :options="barChartOptions" />
-          <div v-else class="loading-placeholder">加载资产分类图表...</div>
+          <BarChart
+            v-if="barChartData"
+            :data="barChartData"
+            :options="barChartOptions"
+          />
+          <div
+            v-else
+            class="loading-placeholder"
+          >
+            加载资产分类图表...
+          </div>
         </div>
       </div>
 
       <div class="chart-card rectangle">
-        <h3 class="chart-title">热搜追踪</h3>
+        <h3 class="chart-title">
+          热搜追踪
+        </h3>
         <div class="chart-container">
-          <LineChart v-if="areaChartData" :data="areaChartData" :options="areaChartOptions" />
-          <div v-else class="loading-placeholder">加载热搜追踪趋势图...</div>
+          <LineChart
+            v-if="areaChartData"
+            :data="areaChartData"
+            :options="areaChartOptions"
+          />
+          <div
+            v-else
+            class="loading-placeholder"
+          >
+            加载热搜追踪趋势图...
+          </div>
         </div>
       </div>
 
       <div class="chart-card rectangle list-card insight-list">
-        <h3 class="chart-title">最新洞察</h3>
+        <h3 class="chart-title">
+          最新洞察
+        </h3>
         <div class="list-items-container">
-          <div v-for="(item, index) in latestInsightsData" :key="index" class="list-item">
+          <div
+            v-for="(item, index) in latestInsightsData"
+            :key="index"
+            class="list-item"
+          >
             <div class="item-icon">
-              <img src="../../assets/file.svg" alt="File Icon" class="icon-file" />
+              <img
+                src="../../assets/file.svg"
+                alt="File Icon"
+                class="icon-file"
+              >
             </div>
             <div class="item-content">
               <span class="item-title">{{ item.title }}</span>
-              <p v-if="item.description" class="item-description">{{ item.description }}</p>
+              <p
+                v-if="item.description"
+                class="item-description"
+              >
+                {{ item.description }}
+              </p>
             </div>
           </div>
         </div>
       </div>
 
       <div class="chart-card square list-card prediction-list">
-        <h3 class="chart-title">爆款预测</h3>
+        <h3 class="chart-title">
+          爆款预测
+        </h3>
         <div class="list-items-container">
-          <div v-for="(item, index) in hotPredictionData" :key="index" class="list-item">
+          <div
+            v-for="(item, index) in hotPredictionData"
+            :key="index"
+            class="list-item"
+          >
             <div class="item-icon">
-              <img v-if="item.icon === 'trend'" src="../../assets/file.svg" alt="Trend Icon" class="icon-trend" />
-              <img v-else-if="item.icon === 'warning'" src="../../assets/file.svg" alt="Warning Icon" class="icon-warning" />
+              <img
+                v-if="item.icon === 'trend'"
+                src="../../assets/file.svg"
+                alt="Trend Icon"
+                class="icon-trend"
+              >
+              <img
+                v-else-if="item.icon === 'warning'"
+                src="../../assets/file.svg"
+                alt="Warning Icon"
+                class="icon-warning"
+              >
             </div>
             <div class="item-content">
               <span class="item-title">{{ item.title }}</span>
@@ -64,7 +134,9 @@
       </div>
 
       <div class="chart-card square stat-card generated-reports">
-        <h3 class="chart-title">已生成报告</h3>
+        <h3 class="chart-title">
+          已生成报告
+        </h3>
         <div class="stat-content">
           <span class="stat-number">{{ generatedReportsCount }}</span>
         </div>
@@ -72,34 +144,55 @@
     </div>
 
     <div class="dashboard-header section-header">
-      <h2 class="page-title">产品数据</h2>
+      <h2 class="page-title">
+        产品数据
+      </h2>
     </div>
 
     <div class="dashboard-grid">
       <div class="chart-card rectangle list-card recent-projects">
-        <h3 class="chart-title">近期项目</h3>
+        <h3 class="chart-title">
+          近期项目
+        </h3>
         <div class="list-items-container">
-          <div v-for="(item, index) in recentProjectsData" :key="index" class="list-item">
+          <div
+            v-for="(item, index) in recentProjectsData"
+            :key="index"
+            class="list-item"
+          >
             <div class="item-icon">
-              <img src="../../assets/file.svg" alt="File Icon" class="icon-file" />
+              <img
+                src="../../assets/file.svg"
+                alt="File Icon"
+                class="icon-file"
+              >
             </div>
             <div class="item-content">
               <span class="item-title">{{ item.title }}</span>
-              <p v-if="item.description" class="item-description">{{ item.description }}</p>
+              <p
+                v-if="item.description"
+                class="item-description"
+              >
+                {{ item.description }}
+              </p>
             </div>
           </div>
         </div>
       </div>
 
       <div class="chart-card square stat-card incubated-projects">
-        <h3 class="chart-title">已孵化项目</h3>
+        <h3 class="chart-title">
+          已孵化项目
+        </h3>
         <div class="stat-content">
           <span class="stat-number">{{ incubatedProjectsCount }}</span>
         </div>
       </div>
 
       <div class="chart-card square stat-card research-projects">
-        <h3 class="chart-title">在研项目</h3>
+        <h3 class="chart-title">
+          在研项目
+        </h3>
         <div class="stat-content">
           <span class="stat-number">{{ researchProjectsCount }}</span>
         </div>

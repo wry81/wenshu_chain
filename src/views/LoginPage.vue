@@ -2,34 +2,73 @@
   <div class="login-container">
     <div class="login-left">
       <div class="logo-wrapper">
-        <img src="../assets/logo.png" alt="文枢链 Logo" class="app-logo" />
+        <img
+          src="../assets/logo.png"
+          alt="文枢链 Logo"
+          class="app-logo"
+        >
       </div>
       <h1>文枢链</h1>
-      <p class="Engtitle">WensoulChain</p>
-      <p class="subtitle">AI语义驱动文档设计云平台</p>
-      <p class="copyright">‌©版权所有：嘉善文枢智创科技有限公司 2025</p>
+      <p class="Engtitle">
+        WensoulChain
+      </p>
+      <p class="subtitle">
+        AI语义驱动文档设计云平台
+      </p>
+      <p class="copyright">
+        ‌©版权所有：嘉善文枢智创科技有限公司 2025
+      </p>
     </div>
     <div class="login-right">
       <div class="login-card">
         <div class="login-form">
-          <h2 class="login-title">登录</h2>
+          <h2 class="login-title">
+            登录
+          </h2>
           <form class="custom-form">
             <div class="form-item">
-              <label for="email" class="form-label">用户名/邮箱</label>
+              <label
+                for="email"
+                class="form-label"
+              >用户名/邮箱</label>
               <div class="form-control-wrapper">
-                <input type="email" id="email" v-model="email" placeholder="请输入邮箱" class="custom-input" />
+                <input
+                  id="email"
+                  v-model="email"
+                  type="email"
+                  placeholder="请输入邮箱"
+                  class="custom-input"
+                >
               </div>
             </div>
             <div class="form-item">
-              <label for="password" class="form-label">密码</label>
+              <label
+                for="password"
+                class="form-label"
+              >密码</label>
               <div class="form-control-wrapper">
-                <input type="password" id="password" v-model="password" placeholder="请输入密码" class="custom-input" />
+                <input
+                  id="password"
+                  v-model="password"
+                  type="password"
+                  placeholder="请输入密码"
+                  class="custom-input"
+                >
               </div>
             </div>
             <div class="form-item">
-              <label for="inviteCode" class="form-label">验证码</label>
+              <label
+                for="inviteCode"
+                class="form-label"
+              >验证码</label>
               <div class="form-control-wrapper">
-                <input type="text" id="inviteCode" v-model="inviteCode" placeholder="请输入邀请码" class="custom-input" />
+                <input
+                  id="inviteCode"
+                  v-model="inviteCode"
+                  type="text"
+                  placeholder="请输入邀请码"
+                  class="custom-input"
+                >
               </div>
             </div>
             <!-- <div class="form-item no-label">
@@ -40,8 +79,20 @@
             </div> -->
           </form>
           <div class="footer">
-            <button type="button" class="custom-button primary-button" @click="handleLogin">登录</button>
-            <button type="button" class="custom-button register-button" @click="goToRegister">注册</button>
+            <button
+              type="button"
+              class="custom-button primary-button"
+              @click="handleLogin"
+            >
+              登录
+            </button>
+            <button
+              type="button"
+              class="custom-button register-button"
+              @click="goToRegister"
+            >
+              注册
+            </button>
           </div>
         </div>
       </div>

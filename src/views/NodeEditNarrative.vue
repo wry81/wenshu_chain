@@ -1,69 +1,96 @@
 <template>
   <div class="node-edit-page">
-    <div class="nodes-scroll-container" ref="scrollContainer">
-      <div class="nodes-track" :style="trackStyle">
+    <div
+      ref="scrollContainer"
+      class="nodes-scroll-container"
+    >
+      <div
+        class="nodes-track"
+        :style="trackStyle"
+      >
         <div 
           v-for="(node, index) in nodes" 
           :key="index"
+          ref="nodeCards"
           class="node-card"
           :class="{ 
             'focused-node': focusedNodeIndex === index,
             'collapsed-node': focusedNodeIndex !== index,
             'loading-node': node.loading
           }"
-          ref="nodeCards"
           @click="focusNode(index)"
         >
-          <div class="node-title">{{ node.title }}</div>
+          <div class="node-title">
+            {{ node.title }}
+          </div>
           
           <template v-if="focusedNodeIndex === index">
             <div class="input-section">
               <label>输入 Prompt:</label>
               <textarea
+                ref="textareas"
                 v-model="node.prompt"
                 :placeholder="node.placeholder || '请输入文字'"
                 rows="6"
-                ref="textareas"
+                :disabled="node.loading"
                 @focus="handleTextareaFocus(index)"
                 @input="(event) => adjustTextareaHeight(event.target)"
-                :disabled="node.loading"
-              ></textarea>
+              />
             </div>
 
             <div class="node-result">
               <h4>返回结果:</h4>
-              <div v-if="node.loading" class="loading-indicator">
+              <div
+                v-if="node.loading"
+                class="loading-indicator"
+              >
                 <p>正在生成结果，请稍候...</p>
-                <div class="spinner"></div>
+                <div class="spinner" />
               </div>
               <template v-else-if="node.result">
-                 <div v-if="isImageUrl(node.result)" class="result-image-container">
-                  <img :src="node.result" alt="AI生成结果" class="result-image">
+                <div
+                  v-if="isImageUrl(node.result)"
+                  class="result-image-container"
+                >
+                  <img
+                    :src="node.result"
+                    alt="AI生成结果"
+                    class="result-image"
+                  >
                 </div>
-                 <div v-else class="output-content" v-html="marked(node.result)"></div>
+                <div
+                  v-else
+                  class="output-content"
+                  v-html="marked(node.result)"
+                />
               </template>
-              <p v-else class="no-result">点击"运行"按钮获取AI结果</p>
+              <p
+                v-else
+                class="no-result"
+              >
+                点击"运行"按钮获取AI结果
+              </p>
             </div>
 
             <div class="node-actions">
               <button 
                 class="redo-btn" 
-                @click.stop="redoNode(index)"
                 :disabled="node.loading"
+                @click.stop="redoNode(index)"
               >
                 <span>重做</span>
               </button>
               <button 
                 class="download-btn" 
-                @click.stop="downloadResult(index)"
                 :disabled="!node.result || node.loading"
+                @click.stop="downloadResult(index)"
               >
                 <span>下载结果</span>
               </button>
               <button 
                 class="continue-btn" 
-                @click.stop="focusNextNode"
                 :disabled="index === nodes.length - 1 || node.loading"
+                @click.stop="focusNextNode"
               >
                 <span>继续</span>
               </button>
@@ -76,18 +103,24 @@
               </p>
             </div>
           </template>
-          <div class="node-connector" v-if="index < nodes.length - 1"></div>
+          <div
+            v-if="index < nodes.length - 1"
+            class="node-connector"
+          />
         </div>
       </div>
     </div>
 
     <div class="task-bar">
-      <button class="exit-btn" @click="exitEditor">
+      <button
+        class="exit-btn"
+        @click="exitEditor"
+      >
         <span>退出</span>
       </button>
       
       <div class="progress-indicator">
-        <div class="progress-line"></div>
+        <div class="progress-line" />
         <div 
           v-for="(node, index) in nodes" 
           :key="'progress-'+index"
@@ -97,15 +130,22 @@
             'completed-dot': node.completed
           }"
           @click="focusNode(index)"
-        ></div>
+        />
       </div>
       
-      <button class="run-btn" @click="runAllNodes" :disabled="isAnyNodeLoading">
+      <button
+        class="run-btn"
+        :disabled="isAnyNodeLoading"
+        @click="runAllNodes"
+      >
         <span v-if="isRunning">运行中...</span>
         <span v-else>运行全部</span>
       </button>
 
-      <button class="runCurrent-btn" @click="runCurrentNode">
+      <button
+        class="runCurrent-btn"
+        @click="runCurrentNode"
+      >
         <span v-if="nodes[focusedNodeIndex].loading">运行中...</span>
         <span v-else>运行</span>
       </button>
@@ -158,15 +198,6 @@ const nodes = ref([
     title: 'IP形象迭代',
     prompt: '',
     placeholder: '上一步的IP设定将自动作为输入...',
-    result: '',
-    completed: false,
-    loading: false
-  },
-  {
-    nodeId: 'step5_doc_generation',
-    title: '文档生成',
-    prompt: '',
-    placeholder: '整个工作流的结果将作为输入...',
     result: '',
     completed: false,
     loading: false
@@ -376,16 +407,32 @@ const callAgentApi = async (nodeIndex) => {
 
   try {
     node.loading = true;
+    
+    // 构建请求体，包含图像数据（如果有的话）
+    const requestBody = { 
+      input: node.prompt,
+      nodeId: node.nodeId 
+    };
+    
+    // 如果节点有图像数据，添加到请求体中
+    if (node.imageData) {
+      requestBody.imageData = node.imageData;
+      console.log(`[Node ${nodeIndex}] 传递图像数据:`, node.imageData.substring(0, 100) + '...');
+    }
+    
+    console.log(`[Node ${nodeIndex}] 调用API，请求体:`, {
+      input: requestBody.input.substring(0, 100) + '...',
+      nodeId: requestBody.nodeId,
+      hasImageData: !!requestBody.imageData
+    });
+    
     const response = await fetch(`/api/agents/${agentId.value}/run`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ 
-        input: node.prompt,
-        nodeId: node.nodeId 
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -420,11 +467,10 @@ const isAnyNodeLoading = computed(() => {
 
 const getNodeModalityType = (nodeId) => {
   const modalityMap = {
-    'step1_culture_analysis': { input: 'text', output: 'text' },
-    'step2_ip_generation': { input: 'text', output: 'image' },
-    'step3_ip_setting': { input: 'image', output: 'text' },
-    'step4_ip_image_iter': { input: 'text', output: 'image' },
-    'step5_doc_generation': { input: 'text', output: 'text' }
+    'step1_culture_analysis': { input: 'text', output: 'text' },   // 文化元素分析：文本→文本
+    'step2_ip_generation': { input: 'text', output: 'text' },      // 文旅IP生成：文本→文本
+    'step3_ip_setting': { input: 'text', output: 'text' },        // IP设定构建：文本→文本
+    'step4_ip_image_iter': { input: 'text', output: 'image' }     // IP形象迭代：文本→图像
   };
   return modalityMap[nodeId] || { input: 'text', output: 'text' };
 };
@@ -435,31 +481,40 @@ const areModalitiesCompatible = (prevNodeId, nextNodeId) => {
   return prevModality.output === nextModality.input;
 };
 
+
+
 const transferDataBetweenNodes = (fromIndex, toIndex) => {
   const fromNode = nodes.value[fromIndex];
   const toNode = nodes.value[toIndex];
   
-  if (!fromNode.result) return false;
+  console.log(`[数据传递] 从节点${fromIndex}(${fromNode.nodeId})到节点${toIndex}(${toNode.nodeId})`);
+  
+  if (!fromNode.result) {
+    console.log(`[数据传递] 源节点无结果，传递失败`);
+    return false;
+  }
   
   const fromModality = getNodeModalityType(fromNode.nodeId);
   const toModality = getNodeModalityType(toNode.nodeId);
   
+  console.log(`[数据传递] 模态检查: ${fromModality.output} -> ${toModality.input}`);
+  
   if (fromModality.output !== toModality.input) {
-    console.log(`模态不匹配: ${fromModality.output} -> ${toModality.input}, 停止自动执行`);
+    console.log(`[数据传递] 模态不匹配: ${fromModality.output} -> ${toModality.input}, 停止自动执行`);
     return false;
   }
   
   switch (toModality.input) {
     case 'text':
       if (isImageUrl(fromNode.result)) {
-        console.log('前一个节点输出是图片，但下一个节点需要文本输入，需要用户手动处理');
+        console.log('[数据传递] 前一个节点输出是图片，但下一个节点需要文本输入，需要用户手动处理');
         return false;
       } else {
         const nodePrompts = {
-          'step3_ip_setting': `基于以下IP生成结果，请构建详细的IP设定：\n\n${fromNode.result}`,
-          'step5_doc_generation': `基于以下所有分析和生成结果，请生成完整的IP创作文档：\n\n${fromNode.result}`
+          'step3_ip_setting': `基于以下IP生成结果，请构建详细的IP设定：\n\n${fromNode.result}`
         };
         toNode.prompt = nodePrompts[toNode.nodeId] || fromNode.result;
+        console.log(`[数据传递] 文本传递完成，目标节点prompt长度: ${toNode.prompt.length}`);
       }
       break;
       
@@ -471,14 +526,17 @@ const transferDataBetweenNodes = (fromIndex, toIndex) => {
           'step4_ip_image_iter': '请基于参考图像，进行IP形象的迭代设计。'
         };
         toNode.prompt = prompts[toNode.nodeId] || '请基于上一步生成的图片进行处理。';
+        console.log(`[数据传递] 图像传递完成，imageData: ${fromNode.result.substring(0, 50)}...`);
+        console.log(`[数据传递] 设置prompt: ${toNode.prompt}`);
       } else {
-        console.log('前一个节点输出不是图片，无法传递给需要图像输入的节点');
+        console.log(`[数据传递] 前一个节点输出不是图片(${fromNode.result.substring(0, 50)}...)，无法传递给需要图像输入的节点`);
         return false;
       }
       break;
       
     default:
       toNode.prompt = fromNode.result;
+      console.log(`[数据传递] 默认传递完成，prompt长度: ${toNode.prompt.length}`);
   }
   
   return true;
@@ -568,7 +626,7 @@ const runAllNodes = async () => {
     }
     
     if (nodes.value.every(node => node.completed)) {
-      alert('🎉 所有节点执行完成！叙事生成工作流已完成。');
+      alert('🎉 所有节点执行完成！叙事引擎工作流已完成。\n\n工作流包含：\n1. 文化元素分析\n2. 文旅IP生成\n3. IP设定构建\n4. IP形象迭代');
     }
     
   } finally {

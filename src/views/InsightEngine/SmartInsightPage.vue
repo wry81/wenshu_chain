@@ -1,58 +1,117 @@
 <template>
   <div class="smart-insight-page">
     <div class="page-header">
-      <h2 class="page-title">已购买智能体</h2>
-      <div class="page-description">选择一个智能体，开始工作或管理</div>
+      <h2 class="page-title">
+        已购买智能体
+      </h2>
+      <div class="page-description">
+        选择一个智能体，开始工作或管理
+      </div>
       <div class="sort-filter-group">
-        <button class="filter-btn">筛选</button>
+        <button class="filter-btn">
+          筛选
+        </button>
         <div class="sort-dropdown">
-          <button class="sort-btn">排序: 最近更新 <span class="arrow-down"></span></button>
+          <button class="sort-btn">
+            排序: 最近更新 <span class="arrow-down" />
+          </button>
           <div class="sort-options">
-            <div class="sort-option">最近更新</div>
-            <div class="sort-option">最近使用</div>
-            <div class="sort-option">创建时间升序</div>
+            <div class="sort-option">
+              最近更新
+            </div>
+            <div class="sort-option">
+              最近使用
+            </div>
+            <div class="sort-option">
+              创建时间升序
+            </div>
           </div>
         </div>
-        <button class="search-btn"><img src="../../assets/search.svg" alt="搜索" /></button>
+        <button class="search-btn">
+          <img
+            src="../../assets/search.svg"
+            alt="搜索"
+          >
+        </button>
       </div>
     </div>
 
     <div class="agent-grid">
-      <div class="agent-card" @click="selectAgent(1)">
-        <img src="../../assets/bg1.png" alt="智能体图片" class="agent-card-image" />
-        <h3 class="agent-name">小红书/抖音文创趋势分析</h3>
+      <div
+        class="agent-card"
+        @click="selectAgent(1)"
+      >
+        <img
+          src="../../assets/bg1.png"
+          alt="智能体图片"
+          class="agent-card-image"
+        >
+        <h3 class="agent-name">
+          小红书/抖音文创趋势分析
+        </h3>
         <p class="agent-description">
           实时追踪小红书、抖音等平台，洞悉文创领域的热点及趋势变化，辅助策略制定与创作。
         </p>
       </div>
 
-      <div class="agent-card" @click="selectAgent('agent2')">
-        <img src="../../assets/bg2.png" alt="智能体图片" class="agent-card-image" />
-        <h3 class="agent-name">细分市场洞察</h3>
+      <div
+        class="agent-card"
+        @click="selectAgent('agent2')"
+      >
+        <img
+          src="../../assets/bg2.png"
+          alt="智能体图片"
+          class="agent-card-image"
+        >
+        <h3 class="agent-name">
+          细分市场洞察
+        </h3>
         <p class="agent-description">
           实时追踪细分市场，洞悉相关趋势变化，辅助策略制定与创作。
         </p>
       </div>
 
-      <div class="agent-card" @click="selectAgent('agent3')">
-        <img src="../../assets/bg2.png" alt="智能体图片" class="agent-card-image" />
-        <h3 class="agent-name">场景活化潜力分析</h3>
+      <div
+        class="agent-card"
+        @click="selectAgent('agent3')"
+      >
+        <img
+          src="../../assets/bg2.png"
+          alt="智能体图片"
+          class="agent-card-image"
+        >
+        <h3 class="agent-name">
+          场景活化潜力分析
+        </h3>
         <p class="agent-description">
           实时追踪场景变化，洞悉相关趋势变化，辅助策略制定与创作。
         </p>
       </div>
 
-      <div class="agent-card" @click="selectAgent('agent4')">
-        <img src="../../assets/bg2.png" alt="智能体图片" class="agent-card-image" />
-        <h3 class="agent-name">文化内涵深度解读</h3>
+      <div
+        class="agent-card"
+        @click="selectAgent('agent4')"
+      >
+        <img
+          src="../../assets/bg2.png"
+          alt="智能体图片"
+          class="agent-card-image"
+        >
+        <h3 class="agent-name">
+          文化内涵深度解读
+        </h3>
         <p class="agent-description">
           实时追踪文化变化，洞悉相关趋势变化，辅助策略制定与创作。
         </p>
       </div>
 
       <div class="agent-card add-agent-card">
-        <div class="add-icon">+</div>
-        <h3 class="agent-name">添加智能体</h3>
+        <div class="add-icon">
+          +
+        </div>
+        <h3 class="agent-name">
+          添加智能体
+        </h3>
       </div>
     </div>
   </div>

@@ -2,39 +2,80 @@
   <div class="smart-insight-page">
     <div class="page-header">
       <div class="header-text">
-        <h2 class="page-title">已购买智能体</h2>
-        <div class="page-description">选择一个智能体，开始工作或管理</div>
-      </div>
-    <div class="sort-filter-group">
-        <button class="filter-btn">切换视图</button>
-        <div class="sort-dropdown">
-        <button class="sort-btn">排序: 最近更新 <span class="arrow-down"></span></button>
-        <div class="sort-options">
-            <div class="sort-option">最近更新</div>
-            <div class="sort-option">最近使用</div>
-            <div class="sort-option">创建时间升序</div>
+        <h2 class="page-title">
+          已购买智能体
+        </h2>
+        <div class="page-description">
+          选择一个智能体，开始工作或管理
         </div>
+      </div>
+      <div class="sort-filter-group">
+        <button class="filter-btn">
+          切换视图
+        </button>
+        <div class="sort-dropdown">
+          <button class="sort-btn">
+            排序: 最近更新 <span class="arrow-down" />
+          </button>
+          <div class="sort-options">
+            <div class="sort-option">
+              最近更新
+            </div>
+            <div class="sort-option">
+              最近使用
+            </div>
+            <div class="sort-option">
+              创建时间升序
+            </div>
+          </div>
         </div>
         <!-- <button class="search-btn"><img src="../../assets/search.svg" alt="搜索" /></button> -->
         <div class="search-container">
-        <input type="text" placeholder="搜索..." class="search-input">
-        <button class="search-btn"><img src="../../assets/search.svg" alt="搜索" /></button>
+          <input
+            type="text"
+            placeholder="搜索..."
+            class="search-input"
+          >
+          <button class="search-btn">
+            <img
+              src="../../assets/search.svg"
+              alt="搜索"
+            >
+          </button>
         </div>
-    </div>
+      </div>
     </div>
 
     <div class="agent-grid">
-      <div class="agent-card" @click="selectAgent(2)">
-        <img src="../../assets/bg2.png" alt="智能体图片" class="agent-card-image" />
-        <h3 class="agent-name">IP视觉形象概念</h3>
+      <div
+        class="agent-card"
+        @click="selectAgent(2)"
+      >
+        <img
+          src="../../assets/bg2.png"
+          alt="智能体图片"
+          class="agent-card-image"
+        >
+        <h3 class="agent-name">
+          IP视觉形象概念
+        </h3>
         <p class="agent-description">
           深度解析全球热门IP形象设计逻辑, 从角色性格到视觉符号, 打造独特记忆点, 让您的IP一眼俘获用户心智。
         </p>
       </div>
 
-      <div class="agent-card" @click="selectAgent('agent2')">
-        <img src="../../assets/bg2.png" alt="智能体图片" class="agent-card-image" />
-        <h3 class="agent-name">文物拟人化</h3>
+      <div
+        class="agent-card"
+        @click="selectAgent('agent2')"
+      >
+        <img
+          src="../../assets/bg2.png"
+          alt="智能体图片"
+          class="agent-card-image"
+        >
+        <h3 class="agent-name">
+          文物拟人化
+        </h3>
         <p class="agent-description">
           唤醒沉睡千年的文物灵魂, 融合历史底蕴与现代审美, 将冰冷器物转化为鲜活角色, 用故事力引爆文化共鸣。
         </p>
@@ -42,9 +83,13 @@
 
       <div class="agent-card add-agent-card">
         <div class="add-icon-container">
-          <div class="add-icon">+</div>
+          <div class="add-icon">
+            +
+          </div>
         </div>
-        <h3 class="agent-name">添加智能体</h3>
+        <h3 class="agent-name">
+          添加智能体
+        </h3>
       </div>
     </div>
   </div>
